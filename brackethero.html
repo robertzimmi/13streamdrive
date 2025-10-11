@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Torneio 8 Jogadores (bracket com curvas)</title>
+<style>
+  :root{
+    --line-color: #222;
+    --line-width: 4;
+    --box-width: 200px;
+    --corner-radius: 10px;
+    --gap: 48; /* distância horizontal entre caixa e ponto médio das linhas */
+  }
+
+  body{
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background: #fafafa;
+    padding: 30px;
+    color:#111;
+  }
+
+  h1{
+    text-align:center;
+    margin-bottom:28px;
+    font-size:28px;
+  }
+
+  /* container do bracket */
+  .bracket{
+    display:flex;
+    gap:140px;
+    justify-content:center;
+    align-items:flex-start;
+    position:relative; /* importante: svg ficará dentro e usaremos coordenadas relativas */
+    padding:20px 40px;
+  }
+
+  .round{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:40px;
+  }
+
+  .round-title{
+    font-weight:700;
+    margin-bottom:6px;
+    text-align:left;
+  }
+/* Semifinals alinhadas */
+.round[data-round="semifinals"] {
+  margin-top: 70px; /* mantém o topo igual */
+}
+
+.round[data-round="semifinals"] .match:nth-child(3) {
+  margin-top: 120px; /* desce o segundo semifinal */
+}
+
+.round[data-round="final"] {
+  margin-top: 150px; /* mantém final mais abaixo */
+}
+
+
+  /* cada match é um "balão" com 2 players empilhados */
+  .match{
+    position:relative;
+    display:block;
+  }
+
+  .node{
+    width:var(--box-width);
+    border:var(--line-width) solid var(--line-color);
+    border-radius:var(--corner-radius);
+    background:transparent;
+    box-sizing:border-box;
+    overflow:hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  }
+
+  .player{
+    height:44px;
+    line-height:44px;
+    padding:0 14px;
+    background:#fff;
+    border:0;
+    display:block;
+    text-align:left;
+    cursor:pointer;
+    user-select:none;
+    font-size:15px;
+  }
+
+  /* separador entre os dois players (visível dentro do balão) */
+  .player + .player{
+    border-top:1px solid rgba(0,0,0,0.06);
+  }
+
+  /* estilo do player selecionado (vencedor) */
+  .player.selected{
+    background:#007bff;
+    color:#fff;
+  }
+
+  /* SVG cobrindo todo o bracket (linhas desenhadas) */
+  svg.connectors {
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    overflow:visible;
+    pointer-events:none;
+  }
+
+  /* responsivo (reduz gap horizontal se tela pequena) */
+  @media (max-width:900px){
+    .bracket{ gap:80px; }
+    :root{ --gap:36; --box-width:170px; }
+  }
+</style>
+</head>
+<body>
+  <h1>Torneio 8 Jogadores</h1>
+
+  <div class="bracket" id="bracket">
+    <!-- Quarterfinals -->
+    <div class="round" data-round="quarterfinals">
+      <div class="round-title">Quarterfinals</div>
+
+      <div class="match" data-match="1">
+        <div class="node">
+          <div class="player">Jogador 1</div>
+          <div class="player">Jogador 2</div>
+        </div>
+      </div>
+
+      <div class="match" data-match="2">
+        <div class="node">
+          <div class="player">Jogador 3</div>
+          <div class="player">Jogador 4</div>
+        </div>
+      </div>
+
+      <div class="match" data-match="3">
+        <div class="node">
+          <div class="player">Jogador 5</div>
+          <div class="player">Jogador 6</div>
+        </div>
+      </div>
+
+      <div class="match" data-match="4">
+        <div class="node">
+          <div class="player">Jogador 7</div>
+          <div class="player">Jogador 8</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Semifinals -->
+    <div class="round" data-round="semifinals">
+      <div class="round-title">Semifinals</div>
+
+      <div class="match" data-match="5">
+        <div class="node">
+          <div class="player">—</div>
+          <div class="player">—</div>
+        </div>
+      </div>
+
+      <div class="match" data-match="6">
+        <div class="node">
+          <div class="player">—</div>
+          <div class="player">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Final -->
+    <div class="round" data-round="final">
+      <div class="round-title">Final</div>
+
+      <div class="match" data-match="7">
+        <div class="node">
+          <div class="player">—</div>
+          <div class="player">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SVG onde desenharemos as linhas -->
+    <svg class="connectors" id="svgConnect"></svg>
+  </div>
+
+<script>
+/*
+  Lógica:
+  - cada match tem .node com 2 .player (top e bottom)
+  - calculamos as coordenadas (relativas ao container .bracket)
+  - desenhamos com SVG:
+      * horizontal do top e bottom para um xMed (xRight + gap)
+      * vertical entre os dois horizontais (no xMed)
+      * horizontal do ponto médio (entre top/bottom) até o próximo nó (com cantos arredondados via stroke-linejoin)
+  - tudo é redesenhado no resize e quando um vencedor é selecionado
+*/
+
+const bracket = document.getElementById('bracket');
+const svg = document.getElementById('svgConnect');
+const gap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--gap')) || 48;
+const lineColor = getComputedStyle(document.documentElement).getPropertyValue('--line-color') || '#222';
+const lineWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--line-width')) || 3;
+
+function clearSVG(){
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+}
+
+function makePath(d){
+  const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.setAttribute('d', d);
+  p.setAttribute('fill','none');
+  p.setAttribute('stroke', lineColor.trim());
+  p.setAttribute('stroke-width', lineWidth);
+  p.setAttribute('stroke-linecap','round');
+  p.setAttribute('stroke-linejoin','round');
+  return p;
+}
+
+function drawLines(){
+  clearSVG();
+
+  // ajusta tamanho do svg para cobrir o container
+  const brRect = bracket.getBoundingClientRect();
+  svg.setAttribute('width', brRect.width);
+  svg.setAttribute('height', brRect.height);
+  svg.setAttribute('viewBox', `0 0 ${brRect.width} ${brRect.height}`);
+
+  const rounds = [...document.querySelectorAll('.round')];
+
+  // para cada round que tem um next round
+  for(let r=0; r < rounds.length - 1; r++){
+    const currentMatches = [...rounds[r].querySelectorAll('.match')];
+    const nextMatches = [...rounds[r+1].querySelectorAll('.match')];
+
+    currentMatches.forEach( (match, idx) => {
+      const players = [...match.querySelectorAll('.player')];
+      if(players.length < 2) return;
+
+      // bounding dos players (em coordenadas relativas ao bracket)
+      const pTop = players[0].getBoundingClientRect();
+      const pBot = players[1].getBoundingClientRect();
+      const offsetX = brRect.left;
+      const offsetY = brRect.top;
+
+      const x1 = (pTop.right - offsetX); // ponto de saída (direita) dos players
+      const yTop = (pTop.top + pTop.height/2) - offsetY;
+      const yBot = (pBot.top + pBot.height/2) - offsetY;
+      const midX = x1 + gap;
+
+      // próximo match correspondente (cada 2 currentMatches -> 1 nextMatch)
+      const nextMatch = nextMatches[Math.floor(idx / 2)];
+      if(!nextMatch) return;
+      const nextPlayers = [...nextMatch.querySelectorAll('.player')];
+      const nTop = nextPlayers[0].getBoundingClientRect();
+      const nBot = nextPlayers[1].getBoundingClientRect();
+      const targetLeft = (nTop.left - offsetX);
+      // centro vertical do próximo nó
+      const targetY = ((nTop.top + nTop.height/2) + (nBot.top + nBot.height/2)) / 2 - offsetY;
+
+      // 1) U-shape do par: top horizontal -> vertical -> bottom horizontal
+      // construir um único path para que as junções fiquem arredondadas
+      // M x1,yTop L midX,yTop L midX,yBot L x1,yBot
+      const pathU = `M ${x1} ${yTop} L ${midX} ${yTop} L ${midX} ${yBot} L ${x1} ${yBot}`;
+      svg.appendChild(makePath(pathU));
+
+      // 2) ligação do centro (midY) até próximo nó com um "cotovelo" (horizontal -> vertical -> horizontal)
+      const midY = (yTop + yBot) / 2;
+      const joinX = targetLeft - 10; // ponto antes da caixa alvo (pequena folga)
+      // path: M midX,midY L joinX,midY L joinX,targetY L targetLeft,targetY
+      const pathToNext = `M ${midX} ${midY} L ${joinX} ${midY} L ${joinX} ${targetY} L ${targetLeft} ${targetY}`;
+      svg.appendChild(makePath(pathToNext));
+    });
+  }
+}
+
+/* lógica de seleção / avanço de vencedor (mantida) */
+function updateNextRound(matchNum, winnerName){
+  if(matchNum <= 4){
+    const semiMatch = document.querySelector(`[data-match="${matchNum <= 2 ? 5 : 6}"]`);
+    const slot = (matchNum % 2 === 1) ? 0 : 1;
+    const pl = semiMatch.querySelectorAll('.player')[slot];
+    pl.textContent = winnerName;
+  } else if(matchNum <= 6){
+    const finalMatch = document.querySelector('[data-match="7"]');
+    const slot = (matchNum % 2 === 1) ? 0 : 1;
+    const pl = finalMatch.querySelectorAll('.player')[slot];
+    pl.textContent = winnerName;
+  }
+  // redesenha após atualização
+  setTimeout(drawLines, 10);
+}
+
+/* liga os eventos de click para seleção */
+function attachClickHandlers(){
+  const matches = [...document.querySelectorAll('.match')];
+  matches.forEach(match => {
+    const players = [...match.querySelectorAll('.player')];
+    const matchNum = parseInt(match.dataset.match, 10);
+    players.forEach((player, i) => {
+      player.addEventListener('click', () => {
+        // seleção única no match
+        players.forEach(p => p.classList.remove('selected'));
+        player.classList.add('selected');
+        updateNextRound(matchNum, player.textContent);
+      });
+    });
+  });
+}
+
+// inicializa
+window.addEventListener('load', () => {
+  attachClickHandlers();
+  drawLines();
+});
+
+// redesenhar em resize (recalcula coords)
+window.addEventListener('resize', () => {
+  drawLines();
+});
+</script>
+</body>
+</html>
