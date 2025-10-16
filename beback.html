@@ -15,12 +15,25 @@ html, body {
 
 body {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: center; /* centraliza verticalmente */
   align-items: center;
-  background: url('https://cdn.fabtcg.com/uploads/2025/07/0tC5y5Yw.width-2000.format-webp-1286x700.webp') no-repeat center center fixed;
+  background: url('image/bg/1.jpg') no-repeat center center fixed;
   background-size: cover;
   color: #fff;
   overflow: hidden;
+  text-align: center;
+  padding: 20px;
+  transition: background 1s ease-in-out;
+}
+
+/* para controlar o espaço entre topo e inferior */
+.top-spacer {
+  flex: 1;
+}
+
+.bottom-spacer {
+  flex: 1;
 }
 
 h1 {
@@ -34,9 +47,78 @@ h1 {
   0% { transform: scale(1); opacity: 0.8; }
   100% { transform: scale(1.1); opacity: 1; }
 }
+
+/* container inferior centralizado */
+.bottom-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 60px;
+  width: 100%;
+  max-width: 800px;
+  margin-top: 40px; /* sobe o inferior */
+}
+
+
+/* esquerda - logo */
+.left-logo img {
+  width: 200px;
+  height: auto;
+}
+
+/* direita - Instagram + QR */
+.right-instagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.right-instagram h2 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.7);
+}
+
+.right-instagram img {
+  width: 150px;
+  height: auto;
+}
 </style>
 </head>
 <body>
+
+  <div class="top-spacer"></div>
+
+  <!-- Topo -->
   <h1>Já Voltamos!</h1>
+
+  <!-- Inferior -->
+  <div class="bottom-container">
+    <div class="left-logo">
+      <img src="image/logo/13Dominate_Logo.svg" alt="Logo">
+    </div>
+    <div class="right-instagram">
+      <h2>Nos siga no Instagram!</h2>
+      <img src="image/logo/13Dominate_qrcode.png" alt="QR Code">
+    </div>
+  </div>
+
+  <div class="bottom-spacer"></div>
+
+<script>
+let currentBg = 1; 
+const totalBg = 7;
+
+function changeBackground() {
+  currentBg++;
+  if (currentBg > totalBg) currentBg = 1;
+  document.body.style.background = `url('image/bg/${currentBg}.jpg') no-repeat center center fixed`;
+  document.body.style.backgroundSize = 'cover';
+}
+
+setInterval(changeBackground, 10000);
+</script>
+
 </body>
 </html>
