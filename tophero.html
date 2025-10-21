@@ -13,124 +13,108 @@ html,body { height:100%; margin:0; }
 
 body {
   font-family: 'Poppins', sans-serif;
-  padding: 40px 0;
+  padding: 30px 0;
   color: white;
-  background: #f4f4f4;
+  background: #0e1a17;
 }
 .page-content { position: relative; z-index: 1; }
 
 h2 {
   text-align: center;
-  margin-bottom: 40px;
-  font-weight: 700;
+  margin-bottom: 25px;
+  font-weight: 600;
   text-shadow: 2px 2px 6px rgba(0,0,0,0.6);
   color: #fff;
+  font-size: 1.8rem;
 }
 
-.team-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 25px;
-  justify-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-@media (max-width: 1100px) { .team-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 600px) { .team-grid { grid-template-columns: 1fr; } }
-
-.team-card {
-  position: relative;
-  width: 220px;
-  height: 220px;
-  border-radius: 20px;
-  box-shadow: 0 12px 28px rgba(0,0,0,0.35);
-  overflow: hidden;
-  background-size: cover;
-  background-position: center;
+#heroGrid {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  color: white;
+  align-items: center;
+  gap: 10px;
+  max-width: 700px;
+  margin: 0 auto;
 }
 
-.overlay {
-  position: absolute;
-  bottom: 0;
+.team-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.6);
+  border-radius: 10px;
+  padding: 8px 15px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+  transition: transform 0.2s;
+}
+.team-card:hover {
+  transform: scale(1.02);
+}
+
+.icon {
+  width: 55px;
+  height: 55px;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+.player-info {
+  flex-grow: 1;
   text-align: center;
-  padding: 8px 0;
 }
+
 .player-name {
-  font-weight: bold;
+  font-weight: 600;
   font-size: 1rem;
-  color: white;
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
   margin: 0;
+  color: #fff;
+  text-shadow: 1px 1px 3px #000;
 }
+
+.placeholder {
+  width: 90px;
+  height: 25px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+  font-weight: 700; /* Negrito */
+}
+
 
 .quiz-medal {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  width: 50px;
-  height: 50px;
-  z-index: 1;
-}
-
-.quiz-medal__ribbon {
-  position: absolute;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 6px 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1;
-}
-.quiz-medal__ribbon.left { 
-  border-color: #FC402D #FC402D transparent #FC402D; 
-  left: -8px; 
-  transform: translateY(-50%) rotate(20deg); 
-}
-.quiz-medal__ribbon.right { 
-  border-color: #E3342F #E3342F transparent #E3342F; 
-  left: 18px; 
-  transform: translateY(-50%) rotate(-20deg); 
+  top: -8px;
+  left: -8px;
+  width: 32px;
+  height: 32px;
+  z-index: 2;
 }
 
 .quiz-medal__circle {
-  position: relative;
-  width: 50px;
-  height: 50px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  font-family: 'Roboto', sans-serif;
-  font-size: 16px;
-  font-weight: 500;
-  color: white;
+  line-height: 32px;
   text-align: center;
-  line-height: 50px;
-  background: #222;
-  box-shadow: inset 0 0 5px rgba(0,0,0,0.3), 0 3px 6px rgba(0,0,0,0.4);
-  z-index: 2;
+  font-weight: bold;
+  font-size: 0.8rem;
+  color: #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
 }
 .quiz-medal__circle.gold { background: linear-gradient(145deg,#f9ad0e,#ffd700,#ffc107); }
 .quiz-medal__circle.silver { background: linear-gradient(145deg,#d1d7da,#c0c0c0,#a9a9a9); }
 .quiz-medal__circle.bronze { background: linear-gradient(145deg,#df7e08,#cd853f,#8b4513); }
 .quiz-medal__circle.dark { background: linear-gradient(145deg,#333,#222,#111); }
 
-.quiz-medal__circle::after {
-  content: attr(data-rank);
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%,-50%);
-  font-weight: bold;
-  color: white;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-}
-
-#errorMsg { text-align: center; color: #ffdddd; margin-top: 20px; }
+#errorMsg { text-align: center; color: #ffdddd; margin-top: 15px; font-size: 0.9rem; }
 </style>
 </head>
 <body>
@@ -142,62 +126,52 @@ h2 {
 <div class="page-content">
   <div class="container">
     <h2>Top 8</h2>
-    <div id="heroGrid" class="team-grid"></div>
+    <div id="heroGrid"></div>
     <div id="errorMsg"></div>
   </div>
 </div>
 
 <script>
-// Número de backgrounds disponíveis
 const NUM_BACKGROUNDS = 7;
-
-// Gera array com nomes 1.jpg, 2.jpg ... NUM_BACKGROUNDS.jpg
 const bgFiles = Array.from({length: NUM_BACKGROUNDS}, (_, i) => `${i+1}.jpg`);
 
-// Imagens dos jogadores (você pode colocar os nomes reais do CSV aqui ou carregar do CSV)
-const heroImages = [
-  "player1.png","player2.png","player3.png","player4.png",
-  "player5.png","player6.png","player7.png","player8.png"
-];
-
-function escapeHtml(str) { return str ? String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") : ""; }
-
-// Seleciona background pelo parâmetro ?bg=1, ?bg=2 etc.
 function getBGFromURL() {
   const params = new URLSearchParams(window.location.search);
   let bgNumber = parseInt(params.get("bg"));
   if (isNaN(bgNumber) || bgNumber < 1 || bgNumber > NUM_BACKGROUNDS) bgNumber = 1;
   return bgNumber;
 }
-
-// Carrega background
 const bgNumber = getBGFromURL();
 document.getElementById("bgImg").src = `image/bg/${bgFiles[bgNumber-1]}`;
 
-// Renderiza os cards
+function escapeHtml(str) {
+  return str ? String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") : "";
+}
+
 function renderCards(list) {
   const grid = document.getElementById("heroGrid");
   grid.innerHTML = "";
   list.forEach(h => {
     const medalClass = h.rank===1?"gold":h.rank===2?"silver":h.rank===3?"bronze":"dark";
-    const bgStyle = h.img ? `background-image: url('image/icon/${h.img}');` : `background: #555;`;
+    const iconStyle = h.img ? `background-image: url('image/icon/${h.img}');` : `background: #555;`;
+    const results = `${h.wins ?? 0} - ${h.losses ?? 0} - ${h.draws ?? 0}`;
     const card = `
-      <div class="team-card" style="${bgStyle}">
+      <div class="team-card position-relative">
         <div class="quiz-medal">
-          <div class="quiz-medal__ribbon left"></div>
-          <div class="quiz-medal__ribbon right"></div>
-          <div class="quiz-medal__circle ${medalClass}" data-rank="${h.rank}"></div>
+          <div class="quiz-medal__circle ${medalClass}">${h.rank}</div>
         </div>
-        <div class="overlay">
-          <div class="player-name">${escapeHtml(h.player)}</div>
+        <div class="icon" style="${iconStyle}"></div>
+        <div class="player-info">
+          <p class="player-name">${escapeHtml(h.player)}</p>
         </div>
+        <div class="placeholder">${results}</div>
       </div>
     `;
     grid.insertAdjacentHTML("beforeend", card);
   });
 }
 
-// Carrega CSV do Google Sheets
+// 🟩 ALTERE AQUI o link do seu CSV
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSuFb7XuHidbVetdsK2rSDnMptjrN96FZxnsn7gCTUVHgCjPGf8I9lTxQP598sw0PBP3AHLYdDa3raw/pub?gid=117341349&single=true&output=csv";
 
 async function loadCSV() {
@@ -207,10 +181,17 @@ async function loadCSV() {
     const text = await res.text();
     const lines = text.trim().split("\n").map(line => line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/));
     const header = lines.shift().map(h => h.trim().replace(/(^"|"$)/g, ""));
-    const idxRank = header.indexOf("Rank");
+
+    // 🟩 Índices das colunas — ajuste conforme o nome no seu CSV:
+    const idxRank   = header.indexOf("Rank");
     const idxPlayer = header.indexOf("Name");
-    const idxImg = header.indexOf("imagem");
-    if (idxRank < 0 || idxPlayer < 0 || idxImg < 0) throw new Error("Colunas 'Rank', 'Name' ou 'imagem' não encontradas.");
+    const idxImg    = header.indexOf("imagem");
+    const idxWins   = header.indexOf("win");
+    const idxLosses = header.indexOf("lose");
+    const idxDraws  = header.indexOf("draw");
+
+
+    if (idxRank < 0 || idxPlayer < 0) throw new Error("Colunas obrigatórias ausentes.");
 
     const topPlayers = lines.map(row => {
       let playerName = (row[idxPlayer]||"").replace(/(^"|"$)/g,"").trim();
@@ -218,7 +199,10 @@ async function loadCSV() {
       return {
         rank: parseInt(row[idxRank]?.trim()),
         player: playerName,
-        img: (row[idxImg]||"").trim()
+        img: (row[idxImg]||"").trim(),
+        wins: parseInt(row[idxWins]) || 0,
+        losses: parseInt(row[idxLosses]) || 0,
+        draws: parseInt(row[idxDraws]) || 0
       };
     });
 
@@ -229,7 +213,6 @@ async function loadCSV() {
   }
 }
 
-// Inicializa
 loadCSV();
 </script>
 
