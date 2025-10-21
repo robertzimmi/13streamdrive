@@ -3,329 +3,229 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Torneio 8 Jogadores (bracket com curvas)</title>
+<title>Bracket Top 8 — Top Players</title>
 <style>
-  :root{
-    --line-color: #222;
-    --line-width: 4;
-    --box-width: 200px;
-    --corner-radius: 10px;
-    --gap: 48; /* distância horizontal entre caixa e ponto médio das linhas */
-  }
-
-  body{
-    font-family: "Segoe UI", Roboto, Arial, sans-serif;
-    background: #fafafa;
-    padding: 30px;
-    color:#111;
-  }
-
-  h1{
-    text-align:center;
-    margin-bottom:28px;
-    font-size:28px;
-  }
-
-  /* container do bracket */
-  .bracket{
-    display:flex;
-    gap:140px;
-    justify-content:center;
-    align-items:flex-start;
-    position:relative; /* importante: svg ficará dentro e usaremos coordenadas relativas */
-    padding:20px 40px;
-  }
-
-  .round{
-    display:flex;
-    flex-direction:column;
-    align-items:flex-start;
-    gap:40px;
-  }
-
-  .round-title{
-    font-weight:700;
-    margin-bottom:6px;
-    text-align:left;
-  }
-/* Semifinals alinhadas */
-.round[data-round="semifinals"] {
-  margin-top: 70px; /* mantém o topo igual */
+:root{
+  --bg:#0e1a17;
+  --gold:#c9a34e;
+  --text:#dfeee6;
+}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family: "Segoe UI", Roboto, sans-serif;
+  margin:0;
+  height:100vh; /* ocupa a tela inteira */
+  display:flex;
+  justify-content:center; /* centraliza horizontalmente */
+  align-items:center; /* centraliza verticalmente */
+  transition: background 0.5s ease;
+  overflow:hidden;
 }
 
-.round[data-round="semifinals"] .match:nth-child(3) {
-  margin-top: 120px; /* desce o segundo semifinal */
+.bracket-wrapper{
+  width:1000px;
+  text-align:center;
 }
 
-.round[data-round="final"] {
-  margin-top: 150px; /* mantém final mais abaixo */
+h1{ 
+  text-align:center; 
+  color:var(--gold); 
+  margin-bottom:18px; 
+  font-size:18px;
 }
 
+/* Grid principal: 3 colunas (Quartas / Semis / Final) e 7 linhas fixas */
+.bracket {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: repeat(7, 72px);
+  gap: 0 60px;
+  align-items: center;
+  justify-content:center;
+}
 
-  /* cada match é um "balão" com 2 players empilhados */
-  .match{
-    position:relative;
-    display:block;
-  }
+.match {
+  width:240px;
+  margin:0 auto;
+  background: rgba(128,128,128,0.8);
+  border:2px solid var(--gold);
+  border-radius:8px;
+  box-sizing:border-box;
+  padding:8px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
 
-  .node{
-    width:var(--box-width);
-    border:var(--line-width) solid var(--line-color);
-    border-radius:var(--corner-radius);
-    background:transparent;
-    box-sizing:border-box;
-    overflow:hidden;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-  }
+.player{
+  background:rgba(255,255,255,0.06);
+  border-radius:6px;
+  padding:8px 10px;
+  margin:6px 0;
+  text-align:center;
+  cursor:pointer;
+  transition: all .12s;
+  font-size:14px;
+  font-weight:bold;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  justify-content:flex-start;
+}
+.player img {
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  display:inline-block;
+}
+.player.no-img img {
+  display:none;
+}
+.player:hover{ background:var(--gold); color:#000; }
+.winner{ background:var(--gold); color:#000; }
 
-  .player{
-    height:44px;
-    line-height:44px;
-    padding:0 14px;
-    background:#fff;
-    border:0;
-    display:block;
-    text-align:left;
-    cursor:pointer;
-    user-select:none;
-    font-size:15px;
-  }
+/* posições das partidas */
+.q1 { grid-column: 1; grid-row: 1; }
+.q2 { grid-column: 1; grid-row: 3; }
+.q3 { grid-column: 1; grid-row: 5; }
+.q4 { grid-column: 1; grid-row: 7; }
+.s1 { grid-column: 2; grid-row: 2; }
+.s2 { grid-column: 2; grid-row: 6; }
+.f1 { grid-column: 3; grid-row: 4; }
 
-  /* separador entre os dois players (visível dentro do balão) */
-  .player + .player{
-    border-top:1px solid rgba(0,0,0,0.06);
-  }
-
-  /* estilo do player selecionado (vencedor) */
-  .player.selected{
-    background:#007bff;
-    color:#fff;
-  }
-
-  /* SVG cobrindo todo o bracket (linhas desenhadas) */
-  svg.connectors {
-    position:absolute;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    overflow:visible;
-    pointer-events:none;
-  }
-
-  /* responsivo (reduz gap horizontal se tela pequena) */
-  @media (max-width:900px){
-    .bracket{ gap:80px; }
-    :root{ --gap:36; --box-width:170px; }
-  }
+/* Responsividade */
+@media(max-width:900px){
+  body { align-items:flex-start; padding:20px; height:auto; overflow:auto; }
+  .bracket{ grid-template-columns: 1fr; grid-template-rows: none; gap:12px; }
+  .q1,.q2,.q3,.q4,.s1,.s2,.f1{ grid-column:auto; grid-row:auto; }
+  .match{ width:100%; }
+}
 </style>
 </head>
 <body>
-  <h1>Torneio 8 Jogadores</h1>
-
+<div class="bracket-wrapper">
+  <h1></h1>
   <div class="bracket" id="bracket">
-    <!-- Quarterfinals -->
-    <div class="round" data-round="quarterfinals">
-      <div class="round-title">Quarterfinals</div>
-
-      <div class="match" data-match="1">
-        <div class="node">
-          <div class="player">Jogador 1</div>
-          <div class="player">Jogador 2</div>
-        </div>
-      </div>
-
-      <div class="match" data-match="2">
-        <div class="node">
-          <div class="player">Jogador 3</div>
-          <div class="player">Jogador 4</div>
-        </div>
-      </div>
-
-      <div class="match" data-match="3">
-        <div class="node">
-          <div class="player">Jogador 5</div>
-          <div class="player">Jogador 6</div>
-        </div>
-      </div>
-
-      <div class="match" data-match="4">
-        <div class="node">
-          <div class="player">Jogador 7</div>
-          <div class="player">Jogador 8</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Semifinals -->
-    <div class="round" data-round="semifinals">
-      <div class="round-title">Semifinals</div>
-
-      <div class="match" data-match="5">
-        <div class="node">
-          <div class="player">—</div>
-          <div class="player">—</div>
-        </div>
-      </div>
-
-      <div class="match" data-match="6">
-        <div class="node">
-          <div class="player">—</div>
-          <div class="player">—</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Final -->
-    <div class="round" data-round="final">
-      <div class="round-title">Final</div>
-
-      <div class="match" data-match="7">
-        <div class="node">
-          <div class="player">—</div>
-          <div class="player">—</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SVG onde desenharemos as linhas -->
-    <svg class="connectors" id="svgConnect"></svg>
+    <div class="match q1" id="q1"></div>
+    <div class="match q2" id="q2"></div>
+    <div class="match q3" id="q3"></div>
+    <div class="match q4" id="q4"></div>
+    <div class="match s1" id="s1"></div>
+    <div class="match s2" id="s2"></div>
+    <div class="match f1" id="f1"></div>
   </div>
+</div>
 
 <script>
-/*
-  Lógica:
-  - cada match tem .node com 2 .player (top e bottom)
-  - calculamos as coordenadas (relativas ao container .bracket)
-  - desenhamos com SVG:
-      * horizontal do top e bottom para um xMed (xRight + gap)
-      * vertical entre os dois horizontais (no xMed)
-      * horizontal do ponto médio (entre top/bottom) até o próximo nó (com cantos arredondados via stroke-linejoin)
-  - tudo é redesenhado no resize e quando um vencedor é selecionado
-*/
+// Background via ?bg=1
+const NUM_BG = 7;
+const params = new URLSearchParams(window.location.search);
+let bgNumber = parseInt(params.get("bg"));
+if (isNaN(bgNumber) || bgNumber < 1 || bgNumber > NUM_BG) bgNumber = 1;
+document.body.style.background = `url('image/bg/${bgNumber}.jpg') no-repeat center center fixed`;
+document.body.style.backgroundSize = 'cover';
 
-const bracket = document.getElementById('bracket');
-const svg = document.getElementById('svgConnect');
-const gap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--gap')) || 48;
-const lineColor = getComputedStyle(document.documentElement).getPropertyValue('--line-color') || '#222';
-const lineWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--line-width')) || 3;
+// Load CSV from Google Sheets
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSuFb7XuHidbVetdsK2rSDnMptjrN96FZxnsn7gCTUVHgCjPGf8I9lTxQP598sw0PBP3AHLYdDa3raw/pub?gid=117341349&single=true&output=csv";
 
-function clearSVG(){
-  while(svg.firstChild) svg.removeChild(svg.firstChild);
-}
+function escapeHtml(str) { return str ? String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") : ""; }
 
-function makePath(d){
-  const p = document.createElementNS('http://www.w3.org/2000/svg','path');
-  p.setAttribute('d', d);
-  p.setAttribute('fill','none');
-  p.setAttribute('stroke', lineColor.trim());
-  p.setAttribute('stroke-width', lineWidth);
-  p.setAttribute('stroke-linecap','round');
-  p.setAttribute('stroke-linejoin','round');
-  return p;
-}
+async function loadCSV() {
+  try {
+    const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(CSV_URL)}`);
+    if (!res.ok) throw new Error("Não foi possível carregar o CSV");
+    const text = await res.text();
+    const lines = text.trim().split("\n").map(line => line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/));
+    const header = lines.shift().map(h => h.trim().replace(/(^"|"$)/g,""));
+    const idxRank = header.indexOf("Rank");
+    const idxPlayer = header.indexOf("Name");
+    const idxImg = header.indexOf("imagem");
+    if (idxRank < 0 || idxPlayer < 0 || idxImg < 0) throw new Error("Colunas 'Rank', 'Name' ou 'imagem' não encontradas.");
 
-function drawLines(){
-  clearSVG();
+    const topPlayers = lines.map(row => {
+      let playerName = (row[idxPlayer]||"").replace(/(^"|"$)/g,"").trim();
+      if (playerName.includes(",")) playerName = playerName.split(",")[0];
+      return {
+        rank: parseInt(row[idxRank]?.trim()),
+        player: playerName,
+        img: (row[idxImg]||"").trim()
+      };
+    }).sort((a,b)=>a.rank-b.rank).slice(0,8);
 
-  // ajusta tamanho do svg para cobrir o container
-  const brRect = bracket.getBoundingClientRect();
-  svg.setAttribute('width', brRect.width);
-  svg.setAttribute('height', brRect.height);
-  svg.setAttribute('viewBox', `0 0 ${brRect.width} ${brRect.height}`);
-
-  const rounds = [...document.querySelectorAll('.round')];
-
-  // para cada round que tem um next round
-  for(let r=0; r < rounds.length - 1; r++){
-    const currentMatches = [...rounds[r].querySelectorAll('.match')];
-    const nextMatches = [...rounds[r+1].querySelectorAll('.match')];
-
-    currentMatches.forEach( (match, idx) => {
-      const players = [...match.querySelectorAll('.player')];
-      if(players.length < 2) return;
-
-      // bounding dos players (em coordenadas relativas ao bracket)
-      const pTop = players[0].getBoundingClientRect();
-      const pBot = players[1].getBoundingClientRect();
-      const offsetX = brRect.left;
-      const offsetY = brRect.top;
-
-      const x1 = (pTop.right - offsetX); // ponto de saída (direita) dos players
-      const yTop = (pTop.top + pTop.height/2) - offsetY;
-      const yBot = (pBot.top + pBot.height/2) - offsetY;
-      const midX = x1 + gap;
-
-      // próximo match correspondente (cada 2 currentMatches -> 1 nextMatch)
-      const nextMatch = nextMatches[Math.floor(idx / 2)];
-      if(!nextMatch) return;
-      const nextPlayers = [...nextMatch.querySelectorAll('.player')];
-      const nTop = nextPlayers[0].getBoundingClientRect();
-      const nBot = nextPlayers[1].getBoundingClientRect();
-      const targetLeft = (nTop.left - offsetX);
-      // centro vertical do próximo nó
-      const targetY = ((nTop.top + nTop.height/2) + (nBot.top + nBot.height/2)) / 2 - offsetY;
-
-      // 1) U-shape do par: top horizontal -> vertical -> bottom horizontal
-      // construir um único path para que as junções fiquem arredondadas
-      // M x1,yTop L midX,yTop L midX,yBot L x1,yBot
-      const pathU = `M ${x1} ${yTop} L ${midX} ${yTop} L ${midX} ${yBot} L ${x1} ${yBot}`;
-      svg.appendChild(makePath(pathU));
-
-      // 2) ligação do centro (midY) até próximo nó com um "cotovelo" (horizontal -> vertical -> horizontal)
-      const midY = (yTop + yBot) / 2;
-      const joinX = targetLeft - 10; // ponto antes da caixa alvo (pequena folga)
-      // path: M midX,midY L joinX,midY L joinX,targetY L targetLeft,targetY
-      const pathToNext = `M ${midX} ${midY} L ${joinX} ${midY} L ${joinX} ${targetY} L ${targetLeft} ${targetY}`;
-      svg.appendChild(makePath(pathToNext));
-    });
+    populateBracket(topPlayers);
+  } catch(err){
+    console.error(err);
+    alert("Erro ao carregar dados: " + err.message);
   }
 }
 
-/* lógica de seleção / avanço de vencedor (mantida) */
-function updateNextRound(matchNum, winnerName){
-  if(matchNum <= 4){
-    const semiMatch = document.querySelector(`[data-match="${matchNum <= 2 ? 5 : 6}"]`);
-    const slot = (matchNum % 2 === 1) ? 0 : 1;
-    const pl = semiMatch.querySelectorAll('.player')[slot];
-    pl.textContent = winnerName;
-  } else if(matchNum <= 6){
-    const finalMatch = document.querySelector('[data-match="7"]');
-    const slot = (matchNum % 2 === 1) ? 0 : 1;
-    const pl = finalMatch.querySelectorAll('.player')[slot];
-    pl.textContent = winnerName;
+function buildPlayerElement(p){ 
+  const isDash = p.player === '—';
+  const imgTag = `<img src="${p.img ? 'image/icon/'+p.img : ''}" alt="">`;
+  const noImgClass = isDash ? 'no-img' : '';
+  return `<div class="player ${noImgClass}">${imgTag}<span>${escapeHtml(p.player)}</span></div>`;
+}
+
+function populateBracket(players){
+  const qMatches = [
+    [players[0], players[7]],
+    [players[3], players[4]],
+    [players[2], players[5]],
+    [players[1], players[6]]
+  ];
+
+  document.getElementById('q1').innerHTML = qMatches[0].map(buildPlayerElement).join('');
+  document.getElementById('q2').innerHTML = qMatches[1].map(buildPlayerElement).join('');
+  document.getElementById('q3').innerHTML = qMatches[2].map(buildPlayerElement).join('');
+  document.getElementById('q4').innerHTML = qMatches[3].map(buildPlayerElement).join('');
+
+  document.getElementById('s1').innerHTML = buildPlayerElement({player:'—', img:''}) + buildPlayerElement({player:'—', img:''});
+  document.getElementById('s2').innerHTML = buildPlayerElement({player:'—', img:''}) + buildPlayerElement({player:'—', img:''});
+  document.getElementById('f1').innerHTML = buildPlayerElement({player:'—', img:''}) + buildPlayerElement({player:'—', img:''});
+}
+
+document.getElementById('bracket').addEventListener('click', ev=>{
+  const el = ev.target.closest('.player');
+  if(!el) return;
+  if(el.querySelector('span').textContent==='—') return;
+
+  const parentMatch = el.closest('.match');
+  const parentId = parentMatch.id;
+
+  parentMatch.querySelectorAll('.player').forEach(p=>p.classList.remove('winner'));
+  el.classList.add('winner');
+
+  if(parentId.startsWith('q')){
+    const map = { q1:['s1',0], q2:['s1',1], q3:['s2',0], q4:['s2',1]};
+    const [target, idx] = map[parentId];
+    const targetEl = document.getElementById(target);
+    const players = Array.from(targetEl.querySelectorAll('.player'));
+    if(players[idx]){
+      const imgSrc = el.querySelector('img') ? el.querySelector('img').src : '';
+      players[idx].querySelector('span').textContent = el.querySelector('span').textContent;
+      players[idx].querySelector('img').src = imgSrc;
+      players[idx].classList.remove('no-img');
+    }
+    players.forEach(p=>p.classList.remove('winner'));
+  } else if(parentId.startsWith('s')){
+    const map = { s1:0, s2:1};
+    const idx = map[parentId];
+    const fEl = document.getElementById('f1');
+    const players = Array.from(fEl.querySelectorAll('.player'));
+    if(players[idx]){
+      const imgSrc = el.querySelector('img') ? el.querySelector('img').src : '';
+      players[idx].querySelector('span').textContent = el.querySelector('span').textContent;
+      players[idx].querySelector('img').src = imgSrc;
+      players[idx].classList.remove('no-img');
+    }
+    players.forEach(p=>p.classList.remove('winner'));
+  } else if(parentId==='f1'){
+    alert('🏆 ' + el.querySelector('span').textContent + ' é o campeão!');
   }
-  // redesenha após atualização
-  setTimeout(drawLines, 10);
-}
-
-/* liga os eventos de click para seleção */
-function attachClickHandlers(){
-  const matches = [...document.querySelectorAll('.match')];
-  matches.forEach(match => {
-    const players = [...match.querySelectorAll('.player')];
-    const matchNum = parseInt(match.dataset.match, 10);
-    players.forEach((player, i) => {
-      player.addEventListener('click', () => {
-        // seleção única no match
-        players.forEach(p => p.classList.remove('selected'));
-        player.classList.add('selected');
-        updateNextRound(matchNum, player.textContent);
-      });
-    });
-  });
-}
-
-// inicializa
-window.addEventListener('load', () => {
-  attachClickHandlers();
-  drawLines();
 });
 
-// redesenhar em resize (recalcula coords)
-window.addEventListener('resize', () => {
-  drawLines();
-});
+loadCSV();
 </script>
 </body>
 </html>
