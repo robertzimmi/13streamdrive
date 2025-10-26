@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FAB Stream Overlay - Editor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Roboto", sans-serif; }
+  body {
+    background: url("https://cdn.fabtcg.com/uploads/2025/09/metrix_bg-scaled-1.jpg") no-repeat center center fixed;
+    background-size: cover;
+    color: white;
+    overflow: hidden;
+  }
+
+  #config {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100vh; backdrop-filter: blur(6px); background: rgba(0,0,0,0.6);
+  }
+  .config-container { display: flex; gap: 40px; margin-bottom: 30px; }
+  .player-config {
+    background: rgba(255,255,255,0.1); padding: 20px; border-radius: 16px;
+    width: 350px; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  }
+  .player-config h2 { text-align: center; margin-bottom: 15px; font-weight: bold; }
+  label { display: block; margin-top: 10px; font-weight: bold; }
+  input, select { width: 100%; padding: 6px; border-radius: 6px; border: none; margin-top: 4px; }
+  input[type="checkbox"] { width: auto; margin-right: 8px; }
+  .preview { text-align: center; margin-top: 10px; }
+  .preview img { width: 100px; height: auto; border-radius: 8px; transition: transform 0.3s ease; }
+  button { padding: 12px 20px; background: #E07A5F; color: white; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; transition: background 0.3s; }
+  button:hover { background: #d0644a; }
+  .toggle { margin-top: 15px; }
+
+  #overlay { display: none; }
+
+  .scoreboard {
+    position: absolute; top: 0; width: 100%; height: 80px; background: black;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 80px; font-size: 26px; font-weight: bold; color: white;
+    border-bottom: 2px solid rgba(255,255,255,0.1); text-shadow: 0 0 6px black;
+    z-index: 10;
+  }
+  .player { display: flex; align-items: center; gap: 10px; }
+  .score { font-size: 30px; text-shadow: 0 0 8px black; }
+
+  .camera {
+    position: absolute; top: 100px; width: 280px; height: 320px;
+    background: rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 12px; backdrop-filter: blur(6px);
+  }
+  .camera.left { left: 40px; }
+  .camera.right { right: 40px; }
+
+  .hero {
+    position: absolute; bottom: 40px; width: 400px; text-align: center;
+    color: white; text-shadow: 0 0 12px black;
+  }
+  .hero img { width: 100%; border-radius: 10px; transition: transform 0.3s ease; }
+  .hero.left { left: 40px; }
+  .hero.right { right: 40px; }
+
+  .play-area {
+    position: absolute; top: 90px; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: center; align-items: center; z-index: 1;
+  }
+  .play-space {
+    width: 65%; height: 80%; background: rgba(0,0,0,0.25);
+    border: 2px solid rgba(255,255,255,0.15); border-radius: 15px;
+    backdrop-filter: blur(4px);
+  }
+</style>
+</head>
+<body>
+
+<div id="config">
+  <h1>🎥 Configuração da Transmissão</h1>
+  <div class="config-container">
+    <div class="player-config" id="p1-config">
+      <h2>Player 1</h2>
+      <label>Nome:</label><input type="text" id="p1-name" placeholder="Nome do Player 1">
+      <label>Wins:</label><input type="number" id="p1-wins" value="0">
+      <label>Losses:</label><input type="number" id="p1-losses" value="0">
+      <label>Draws:</label><input type="number" id="p1-draws" value="0">
+      <label>Herói:</label>
+      <select id="p1-hero"></select>
+      <div class="preview"><img id="p1-preview" src=""></div>
+      <div class="toggle"><input type="checkbox" id="p1-flip"> Inverter imagem</div>
+    </div>
+
+    <div class="player-config" id="p2-config">
+      <h2>Player 2</h2>
+      <label>Nome:</label><input type="text" id="p2-name" placeholder="Nome do Player 2">
+      <label>Wins:</label><input type="number" id="p2-wins" value="0">
+      <label>Losses:</label><input type="number" id="p2-losses" value="0">
+      <label>Draws:</label><input type="number" id="p2-draws" value="0">
+      <label>Herói:</label>
+      <select id="p2-hero"></select>
+      <div class="preview"><img id="p2-preview" src=""></div>
+      <div class="toggle"><input type="checkbox" id="p2-flip"> Inverter imagem</div>
+    </div>
+  </div>
+  <div class="toggle"><input type="checkbox" id="toggle-webcam" checked> Mostrar câmeras</div>
+  <button onclick="startStream()">Iniciar Transmissão</button>
+</div>
+
+<div id="overlay">
+  <div class="scoreboard">
+    <div class="player"><span id="p1-display-name"></span><span class="score" id="p1-score"></span></div>
+    <div class="player"><span class="score" id="p2-score"></span><span id="p2-display-name"></span></div>
+  </div>
+
+  <div class="camera left" id="cam-left"></div>
+  <div class="camera right" id="cam-right"></div>
+
+  <div class="hero left">
+    <img id="p1-img" src="" alt="Hero1" onerror="this.src='image/icon/unknown.webp'">
+    <h2 id="p1-hero-name"></h2>
+  </div>
+  <div class="hero right">
+    <img id="p2-img" src="" alt="Hero2" onerror="this.src='image/icon/unknown.webp'">
+    <h2 id="p2-hero-name"></h2>
+  </div>
+
+  <div class="play-area"><div class="play-space"></div></div>
+</div>
+
+<script>
+const heroes = [
+  "icon_arakni_m.webp","icon_arakni_sc.webp","icon_arakni_th-1.webp","icon_aurora.webp","icon_azalea.webp",
+  "icon_benji.webp","icon_betsy.webp","icon_boltyn.webp","icon_bravo_s.webp","icon_bravo_sots.webp",
+  "icon_brevant.webp","icon_briar.webp","icon_chane.webp","icon_cindra.webp","icon_dash_ie.webp",
+  "icon_dash_io.webp","icon_datadoll.webp","icon_dorinthea.webp","icon_dromai.webp","icon_emperor.webp",
+  "icon_enigma.webp","icon_fai.webp","icon_fang.webp","icon_florian.webp","icon_genis.webp",
+  "icon_gravybones.webp","icon_ira.webp","icon_iyslander.webp","icon_jarl.webp","icon_kano.webp",
+  "icon_kassai_cs.webp","icon_kassai_gs.webp","icon_katsu.webp","icon_kavdaen.webp","icon_kayo_ad.webp",
+  "icon_kayo_br_resized.webp","icon_kayo_uc-2.webp","icon_levia.webp","icon_lexi.webp","icon_lyath-2.webp",
+  "icon_marlynn.webp","icon_maxxnitro.webp","icon_melody.webp","icon_nuu.webp","icon_oldhim-1.webp",
+  "icon_olympia.webp","icon_oscillio.webp","icon_pleiades-1.webp","icon_prism_aos.webp","icon_prism_soa.webp",
+  "icon_puffin.webp","icon_rhinar_rr-1.webp","icon_riptide.webp","icon_scurv.webp","icon_shiyana.webp",
+  "icon_teklovossen.webp","icon_terra.webp","icon_tuffnut-1.webp","icon_uzuri.webp","icon_valda.webp",
+  "icon_verdance.webp","icon_victor.webp","icon_viserai.webp","icon_vynnset.webp","icon_yoji.webp",
+  "icon_zen.webp","slippy_cover-scaled.webp","unknown.webp"
+];
+
+function formatHeroName(file) {
+  return file.replace(/^icon_/, "").replace(/\.webp$/, "").replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+}
+
+function populateHeroes() {
+  const selects = [document.getElementById("p1-hero"), document.getElementById("p2-hero")];
+  selects.forEach(sel => {
+    heroes.forEach(file => {
+      const opt = document.createElement("option");
+      opt.value = file;
+      opt.text = formatHeroName(file);
+      sel.appendChild(opt);
+    });
+  });
+  document.getElementById("p1-preview").src = `image/icon/${heroes[0]}`;
+  document.getElementById("p2-preview").src = `image/icon/${heroes[0]}`;
+}
+
+populateHeroes();
+
+document.getElementById("p1-hero").addEventListener("change", e => {
+  document.getElementById("p1-preview").src = `image/icon/${e.target.value}`;
+});
+document.getElementById("p2-hero").addEventListener("change", e => {
+  document.getElementById("p2-preview").src = `image/icon/${e.target.value}`;
+});
+
+function startStream() {
+  document.getElementById("config").style.display = "none";
+  document.getElementById("overlay").style.display = "block";
+
+  const p1HeroFile = document.getElementById("p1-hero").value;
+  const p2HeroFile = document.getElementById("p2-hero").value;
+
+  const p1 = {
+    name: document.getElementById("p1-name").value || "Player 1",
+    wins: document.getElementById("p1-wins").value,
+    losses: document.getElementById("p1-losses").value,
+    draws: document.getElementById("p1-draws").value,
+    hero: formatHeroName(p1HeroFile),
+    img: `image/icon/${p1HeroFile}`,
+    flip: document.getElementById("p1-flip").checked
+  };
+  const p2 = {
+    name: document.getElementById("p2-name").value || "Player 2",
+    wins: document.getElementById("p2-wins").value,
+    losses: document.getElementById("p2-losses").value,
+    draws: document.getElementById("p2-draws").value,
+    hero: formatHeroName(p2HeroFile),
+    img: `image/icon/${p2HeroFile}`,
+    flip: document.getElementById("p2-flip").checked
+  };
+
+  document.getElementById("p1-display-name").innerText = p1.name;
+  document.getElementById("p2-display-name").innerText = p2.name;
+  document.getElementById("p1-score").innerText = `${p1.wins}-${p1.losses}-${p1.draws}`;
+  document.getElementById("p2-score").innerText = `${p2.wins}-${p2.losses}-${p2.draws}`;
+  document.getElementById("p1-img").src = p1.img;
+  document.getElementById("p2-img").src = p2.img;
+  document.getElementById("p1-hero-name").innerText = p1.hero;
+  document.getElementById("p2-hero-name").innerText = p2.hero;
+  document.getElementById("p1-img").style.transform = p1.flip ? "scaleX(-1)" : "none";
+  document.getElementById("p2-img").style.transform = p2.flip ? "scaleX(-1)" : "none";
+
+  const showCams = document.getElementById("toggle-webcam").checked;
+  document.getElementById("cam-left").style.display = showCams ? "block" : "none";
+  document.getElementById("cam-right").style.display = showCams ? "block" : "none";
+}
+</script>
+
+</body>
+</html>
