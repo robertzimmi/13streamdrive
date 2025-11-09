@@ -18,11 +18,15 @@
   }
 
   html, body {
-    height: 100%;
+    width: 100%;
+    min-height: 100vh;
+    height: auto;
     margin: 0;
+    padding: 0;
     font-family: 'Segoe UI', Verdana, sans-serif;
     background: var(--bg-dark);
     color: white;
+    overflow-x: hidden;
   }
 
   /* Container responsivo central */
@@ -63,16 +67,34 @@
   /* Fundo full-width (atrás do conteúdo) */
   #bgLayer {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    min-width: 100vw;
+    min-height: 100vh;
     z-index: -1;
     overflow: hidden;
     pointer-events: none;
+    margin: 0;
+    padding: 0;
   }
   #bgLayer img {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
+    min-width: 100%;
+    min-height: 100%;
     object-fit: cover;
+    object-position: center center;
     filter: brightness(0.45) saturate(1.1);
+    display: block;
+    margin: 0;
+    padding: 0;
   }
 
   /* Grid responsiva de heróis */
@@ -223,25 +245,36 @@ const statusMsg = document.getElementById("statusMsg");
 const btnGerar = document.getElementById("btnGerar");
 
 let backgrounds = [];
+let bgLoadedCount = 0;
 
 // Pré-carrega backgrounds (se existirem)
 (function preloadBGs(){
-  let loaded = 0;
   for(let i=1;i<=MAX_BG;i++){
     const url = `image/bg/${i}.jpg`;
     const img = new Image();
-    img.src = url;
     img.onload = () => {
       backgrounds.push(url);
-      if (loaded === 0) setBG(0);
+      bgLoadedCount++;
+      // Define o primeiro background assim que carregar
+      if (bgLoadedCount === 1) {
+        setBG(0);
+      }
     };
-    img.onerror = ()=>{/* ignora se não existir */};
-    loaded++;
+    img.onerror = () => {
+      // Ignora se não existir, mas continua tentando os outros
+      console.log(`Background ${i}.jpg não encontrado`);
+    };
+    img.src = url;
   }
 })();
 
 function setBG(idx){
-  if (backgrounds.length === 0) return;
+  if (backgrounds.length === 0) {
+    // Se não houver backgrounds carregados, define um padrão ou deixa vazio
+    bgImg.src = "";
+    return;
+  }
+  // Garante que o índice esteja dentro do range válido
   idx = ((idx % backgrounds.length) + backgrounds.length) % backgrounds.length;
   bgImg.src = backgrounds[idx];
 }
@@ -250,94 +283,28 @@ function setBG(idx){
    Função para carregar CSV
    ---------------------------- */
 async function loadCSV(){
-  let text = null;
-  let errorMsg = "";
-  
-  statusMsg.innerText = "Carregando planilha...";
-  
-  // Estratégia 1: Tentar com allorigins.win (proxy CORS)
   try {
+    statusMsg.innerText = "Carregando planilha...";
+    // usa allorigins para evitar CORS (pode trocar dependendo do host)
     const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(CSV_URL)}`);
-    if (res.ok) {
-      text = await res.text();
-      if (text && text.trim().length > 0) {
-        // Sucesso com allorigins
-        parseAndRenderCSV(text);
-        return;
-      }
-    }
-  } catch (err) {
-    errorMsg = `allorigins.win falhou: ${err.message}. `;
-  }
-  
-  // Estratégia 2: Tentar diretamente (pode funcionar em alguns navegadores)
-  try {
-    const res = await fetch(CSV_URL);
-    if (res.ok) {
-      text = await res.text();
-      if (text && text.trim().length > 0) {
-        // Sucesso direto
-        parseAndRenderCSV(text);
-        return;
-      }
-    }
-  } catch (err) {
-    errorMsg += `Fetch direto falhou: ${err.message}. `;
-  }
-  
-  // Estratégia 3: Tentar com outro proxy CORS
-  try {
-    const res = await fetch(`https://cors-anywhere.herokuapp.com/${CSV_URL}`);
-    if (res.ok) {
-      text = await res.text();
-      if (text && text.trim().length > 0) {
-        parseAndRenderCSV(text);
-        return;
-      }
-    }
-  } catch (err) {
-    errorMsg += `cors-anywhere falhou: ${err.message}. `;
-  }
-  
-  // Se todas as estratégias falharam
-  console.error("Erro ao carregar CSV:", errorMsg);
-  statusMsg.innerHTML = `
-    <div style="color: #ff6b6b; font-weight: 600;">
-      ❌ Erro ao carregar planilha: Failed to fetch
-    </div>
-    <div style="margin-top: 10px; font-size: 0.9em; color: #ccc;">
-      <strong>Solução:</strong> Para testar localmente, você precisa usar um servidor HTTP.<br>
-      <strong>Opção 1:</strong> Python: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">python -m http.server 8000</code><br>
-      <strong>Opção 2:</strong> Node.js: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">npx http-server</code><br>
-      <strong>Opção 3:</strong> VS Code: Instale a extensão "Live Server"<br>
-      Depois acesse: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">http://localhost:8000/instagramqtdhero.html</code>
-    </div>
-  `;
-}
+    if (!res.ok) throw new Error("Não foi possível baixar CSV");
+    const text = await res.text();
 
-function parseAndRenderCSV(text) {
-  try {
     // parse CSV simples (respeita vírgulas em aspas)
     const lines = text.trim().split("\n").map(l => l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/));
-    if (lines.length === 0) {
-      statusMsg.innerText = "CSV vazio ou inválido.";
-      return;
-    }
-    
     const header = lines.shift().map(h => h.trim().replace(/^"|"$/g,""));
     const idxHero = header.indexOf("Hero");
     const idxFileName = header.indexOf("url");
 
     if (idxHero < 0 || idxFileName < 0) {
-      statusMsg.innerText = `CSV sem colunas 'Hero' ou 'url'. Colunas encontradas: ${header.join(", ")}`;
+      statusMsg.innerText = "CSV sem colunas 'Hero' ou 'url'.";
       return;
     }
 
     const heroCountMap = {};
     for (const row of lines) {
-      if (!row || row.length === 0) continue;
-      const heroName = (row[idxHero] || "").trim().replace(/^"|"$/g, "");
-      const fileName = (row[idxFileName] || "").trim().replace(/^"|"$/g, "");
+      const heroName = (row[idxHero] || "").trim();
+      const fileName = (row[idxFileName] || "").trim();
       if (!heroName) continue;
       if (!heroCountMap[heroName]) heroCountMap[heroName] = { count: 0, img: fileName ? `${LOCAL_ICON_PATH}${fileName}` : '' };
       heroCountMap[heroName].count++;
@@ -345,7 +312,7 @@ function parseAndRenderCSV(text) {
 
     const total = Object.values(heroCountMap).reduce((s,h)=>s+h.count,0);
     totalHeroesEl.innerText = `Conversão: ${total} Jogadores`;
-    statusMsg.innerText = `✅ Encontrados ${Object.keys(heroCountMap).length} heróis diferentes.`;
+    statusMsg.innerText = `Encontrados ${Object.keys(heroCountMap).length} heróis diferentes.`;
 
     // transforma pra lista ordenada
     const heroList = Object.keys(heroCountMap).map(name => ({
@@ -359,8 +326,8 @@ function parseAndRenderCSV(text) {
     window.__heroData = { total, heroList };
 
   } catch (err) {
-    console.error("Erro ao processar CSV:", err);
-    statusMsg.innerText = `Erro ao processar CSV: ${err.message}`;
+    console.error(err);
+    statusMsg.innerText = "Erro ao carregar CSV. Verifique a URL e CORS.";
   }
 }
 
@@ -420,109 +387,187 @@ async function gerarStories() {
   const off = document.createElement("div");
   off.style.position = "fixed";
   off.style.left = "-9999px";
-  off.style.top = "-9999px";
+  off.style.top = "0";
   off.style.width = storyW + "px";
   off.style.height = storyH + "px";
   off.style.overflow = "hidden";
-  off.style.background = "linear-gradient(180deg, #1B4D3E, #000)";
-  off.style.padding = "48px";
+  off.style.background = "linear-gradient(180deg, #000000 0%, #1a1a1a 50%, #0d0d0d 100%)";
+  off.style.padding = "0";
+  off.style.margin = "0";
   off.style.boxSizing = "border-box";
   off.style.color = "white";
   off.style.fontFamily = "Segoe UI, Verdana, sans-serif";
+  off.style.display = "flex";
+  off.style.flexDirection = "column";
+  off.style.justifyContent = "flex-start";
 
-  // Cabeçalho
-  const hdr = document.createElement("div");
-  hdr.style.display = "flex";
-  hdr.style.alignItems = "center";
-  hdr.style.justifyContent = "center";
-  hdr.style.gap = "20px";
-  hdr.style.background = "linear-gradient(135deg, #7b001f, #5c0018, #30000d)";
-  hdr.style.padding = "18px";
-  hdr.style.borderRadius = "12px";
-  hdr.style.borderBottom = "6px solid " + getComputedStyle(document.documentElement).getPropertyValue('--gold');
-  hdr.innerHTML = `<div style="flex:1;text-align:center;font-weight:800;font-size:56px;">Relatório de Heróis</div>`;
-  off.appendChild(hdr);
+  // Faixa com logo Torneio dentro
+  const headerBar = document.createElement("div");
+  headerBar.style.width = "100%";
+  headerBar.style.background = "linear-gradient(135deg, #7b001f, #5c0018 40%, #30000d 100%)";
+  headerBar.style.padding = "25px 20px";
+  headerBar.style.position = "relative";
+  headerBar.style.borderBottom = "6px solid #FFD700";
+  headerBar.style.boxShadow = "0 4px 15px rgba(0,0,0,0.5)";
+  headerBar.style.flexShrink = "0";
+  headerBar.style.display = "flex";
+  headerBar.style.alignItems = "center";
+  headerBar.style.justifyContent = "center";
+  
+  // Logo Torneio dentro do header
+  const logoImg = document.createElement("img");
+  logoImg.src = "image/logo/torneio.png";
+  logoImg.style.height = "90px";
+  logoImg.style.width = "auto";
+  logoImg.style.maxWidth = "85%";
+  logoImg.style.objectFit = "contain";
+  logoImg.onerror = () => {
+    logoImg.style.display = "none";
+  };
+  headerBar.appendChild(logoImg);
+  off.appendChild(headerBar);
 
-  // Total
-  const tot = document.createElement("div");
-  tot.style.marginTop = "18px";
-  tot.style.fontWeight = "800";
-  tot.style.fontSize = "28px";
-  tot.innerText = `Conversão: ${data.total} Jogadores`;
-  off.appendChild(tot);
+  // Texto de conversão
+  const conversionDiv = document.createElement("div");
+  conversionDiv.style.textAlign = "center";
+  conversionDiv.style.fontWeight = "700";
+  conversionDiv.style.fontSize = "38px";
+  conversionDiv.style.padding = "20px 20px";
+  conversionDiv.style.color = "white";
+  conversionDiv.style.textShadow = "2px 2px 4px rgba(0,0,0,0.5)";
+  conversionDiv.style.flexShrink = "0";
+  conversionDiv.innerText = `Conversão: ${data.total} Jogadores`;
+  off.appendChild(conversionDiv);
 
-  // Grid grande
+  // Calcula número de colunas baseado na quantidade de heróis
+  const totalHeroes = data.heroList.length;
+  let numCols = 3; // padrão
+  
+  // Lógica responsiva para determinar número de colunas
+  if (totalHeroes <= 6) {
+    numCols = 2;
+  } else if (totalHeroes <= 12) {
+    numCols = 3;
+  } else if (totalHeroes <= 20) {
+    numCols = 4;
+  } else {
+    // Para muitos heróis, usa 4 colunas e ajusta tamanho dos cards
+    numCols = 4;
+  }
+
+  // Calcula espaço disponível para o grid (ajustado para os novos valores)
+  const headerHeight = 121; // faixa com logo (25 + 25 + 90 logo + 6 linha dourada)
+  const conversionHeight = 78; // texto conversão + padding (20 + 20 + 38)
+  const gridPadding = 50; // padding top (20) + bottom (30) do grid
+  const availableHeight = storyH - headerHeight - conversionHeight - gridPadding;
+  
+  // Calcula número de linhas
+  const numRows = Math.ceil(totalHeroes / numCols);
+  
+  // Calcula gap total vertical
+  const gapSize = 15;
+  const totalGapHeight = (numRows - 1) * gapSize;
+  
+  // Calcula altura ideal dos cards para caber tudo
+  // Garante altura mínima de 150px e máxima que caiba no espaço disponível
+  let cardHeight = Math.floor((availableHeight - totalGapHeight) / numRows);
+  cardHeight = Math.max(150, Math.min(cardHeight, 350)); // altura entre 150px e 350px
+  
+  // Recalcula se necessário para garantir que tudo caiba
+  const totalNeededHeight = (numRows * cardHeight) + totalGapHeight;
+  if (totalNeededHeight > availableHeight) {
+    cardHeight = Math.floor((availableHeight - totalGapHeight) / numRows);
+  }
+  
+  const cardWidth = Math.floor((storyW - 60 - (numCols - 1) * gapSize) / numCols); // 60 = padding lateral
+
+  // Grid responsivo - mostra TODOS os heróis
   const grid = document.createElement("div");
   grid.style.display = "grid";
-  grid.style.gridTemplateColumns = "repeat(3, 1fr)";
-  grid.style.gap = "18px";
-  grid.style.marginTop = "28px";
+  grid.style.gridTemplateColumns = `repeat(${numCols}, 1fr)`;
+  grid.style.gap = gapSize + "px";
+  grid.style.padding = "20px 30px 30px";
+  grid.style.width = "100%";
+  grid.style.height = Math.min((numRows * cardHeight + totalGapHeight), availableHeight) + "px";
+  grid.style.boxSizing = "border-box";
   grid.style.alignItems = "start";
+  grid.style.overflow = "hidden";
+  grid.style.flexShrink = "0";
 
-  // Prepara imagens - limita a primeira 9 para caber no stories
-  const toRender = data.heroList.slice(0, 9);
-  // Preload imagens para reduzir risco de CORS problemas (tenta definir crossOrigin)
-  await Promise.all(toRender.map(h => preloadImage(h.img)));
+  // Preload todas as imagens
+  await Promise.all(data.heroList.map(h => preloadImage(h.img)));
 
-  for (const h of toRender) {
+  // Renderiza TODOS os heróis
+  for (const h of data.heroList) {
     const card = document.createElement("div");
+    card.style.position = "relative";
     card.style.borderRadius = "12px";
     card.style.overflow = "hidden";
-    card.style.background = "rgba(255,255,255,0.05)";
-    card.style.border = "2px solid rgba(255,215,0,0.12)";
-    card.style.display = "flex";
-    card.style.flexDirection = "column";
-    card.style.alignItems = "stretch";
-    card.style.justifyContent = "space-between";
-    card.style.height = "280px";
+    card.style.background = "rgba(255,255,255,0.08)";
+    card.style.border = "2px solid rgba(255,215,0,0.3)";
+    card.style.boxShadow = "0 4px 12px rgba(0,0,0,0.6)";
+    card.style.height = cardHeight + "px";
+    card.style.width = "100%";
 
     const img = document.createElement("img");
     img.alt = h.hero;
     img.style.width = "100%";
     img.style.height = "100%";
     img.style.objectFit = "cover";
-    img.src = h.img || `https://via.placeholder.com/400x300?text=${encodeURIComponent(h.hero)}`;
-    img.onerror = function(){ this.src = `https://via.placeholder.com/400x300?text=${encodeURIComponent(h.hero)}`; };
+    img.style.display = "block";
+    img.src = h.img || `https://via.placeholder.com/400x300/1a1a1a/ffffff?text=${encodeURIComponent(h.hero)}`;
+    img.onerror = function(){ 
+      this.src = `https://via.placeholder.com/400x300/1a1a1a/ffffff?text=${encodeURIComponent(h.hero)}`; 
+    };
 
-    const info = document.createElement("div");
-    info.style.padding = "10px";
-    info.style.background = "linear-gradient(135deg, rgba(0,0,0,0.45), rgba(0,0,0,0.6))";
-    info.style.borderTop = "1px solid rgba(255,215,0,0.12)";
-    info.style.color = "white";
-    info.style.fontWeight = 800;
-    info.style.fontSize = "20px";
-    info.innerText = `${h.hero} — ${h.count} (${Math.round((h.count/data.total)*100 || 0)}%)`;
+    // Stats no canto inferior esquerdo do card - tamanho 1/2 do card (aumentado 100%)
+    const stats = document.createElement("div");
+    stats.style.position = "absolute";
+    stats.style.bottom = "10px";
+    stats.style.left = "10px";
+    // Background translúcido 50% usando rgba
+    stats.style.background = "linear-gradient(135deg, rgba(128, 0, 32, 0.5), rgba(160, 0, 48, 0.5))";
+    stats.style.color = "#fff";
+    // Tamanho do stats = reduzido em 15% (de 50% para 42.5% do card)
+    const statsSize = cardHeight * 0.425;
+    stats.style.width = statsSize + "px";
+    stats.style.height = statsSize + "px";
+    stats.style.padding = "12px";
+    stats.style.border = "4px solid #FFD700";
+    stats.style.borderRadius = "14px";
+    stats.style.fontWeight = "900";
+    stats.style.textAlign = "center";
+    stats.style.boxShadow = "0 0 20px rgba(0,0,0,0.8), 0 0 12px rgba(255,215,0,0.4)";
+    stats.style.display = "flex";
+    stats.style.flexDirection = "column";
+    stats.style.alignItems = "center";
+    stats.style.justifyContent = "center";
+    stats.style.boxSizing = "border-box";
+    stats.style.backdropFilter = "blur(2px)"; // Adiciona leve desfoque para melhor legibilidade
+    const percent = data.total > 0 ? Math.round((h.count/data.total)*100) : 0;
+    // Ajusta tamanho da fonte baseado no tamanho do stats (1/2 do card) - fontes maiores
+    const countFontSize = Math.max(40, Math.min(100, statsSize * 0.55));
+    const percentFontSize = Math.max(24, Math.min(45, statsSize * 0.28));
+    stats.innerHTML = `<div style="font-size: ${countFontSize}px; line-height: 1; font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">${h.count}</div><div style="font-size: ${percentFontSize}px; line-height: 1; margin-top: 6px; opacity: 0.95; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">${percent}%</div>`;
 
     card.appendChild(img);
-    card.appendChild(info);
+    card.appendChild(stats);
     grid.appendChild(card);
   }
 
   off.appendChild(grid);
-
-  // QR no canto inferior direito do story
-  const qr = document.createElement("div");
-  qr.style.position = "absolute";
-  qr.style.right = "48px";
-  qr.style.bottom = "48px";
-  qr.style.width = "140px";
-  qr.style.height = "140px";
-  qr.style.border = "4px solid #FFD700";
-  qr.style.borderRadius = "12px";
-  qr.style.background = "white";
-  const qrImg = document.createElement("img");
-  qrImg.style.width = "100%";
-  qrImg.style.height = "100%";
-  qrImg.style.objectFit = "contain";
-  qrImg.src = "image/logo/13Dominate_qrcode.png";
-  qrImg.onerror = () => qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://13dominate.com`;
-  qr.appendChild(qrImg);
-  off.appendChild(qr);
-
+  
+  // Garante que o container tenha exatamente a altura correta
+  const totalContentHeight = headerHeight + conversionHeight + (numRows * cardHeight + totalGapHeight) + gridPadding;
+  if (totalContentHeight > storyH) {
+    // Se exceder, reduz um pouco o padding ou ajusta
+    grid.style.padding = "15px 30px 15px";
+  }
+  
   document.body.appendChild(off);
 
-  // Espera 400ms pra garantir imagens carregadas
-  await new Promise(r => setTimeout(r, 400));
+  // Espera carregamento das imagens - aumenta tempo para garantir que todas carreguem
+  await new Promise(r => setTimeout(r, 800));
 
   // Renderiza com html2canvas (scale 2 para qualidade)
   try {
@@ -532,12 +577,14 @@ async function gerarStories() {
       backgroundColor: null,
       width: storyW,
       height: storyH,
-      scale: 2
+      scale: 2,
+      scrollX: 0,
+      scrollY: 0
     });
 
-    // Baixa
+    // Baixa a imagem
     const link = document.createElement("a");
-    link.download = `stories-1080x1920.png`;
+    link.download = `relatorio-herois-${data.total}jogadores.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
   } catch (err) {
