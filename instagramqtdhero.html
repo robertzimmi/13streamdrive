@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gerador Stories Responsivo — 1080x1920</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+  :root {
+    --bg-dark: #000;
+    --accent: #E07A5F;
+    --vinho-1: #7b001f;
+    --vinho-2: #30000d;
+    --gold: #FFD700;
+    --card-w: 220px;
+  }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    font-family: 'Segoe UI', Verdana, sans-serif;
+    background: var(--bg-dark);
+    color: white;
+  }
+
+  /* Container responsivo central */
+  .app-wrap {
+    max-width: 1100px;
+    margin: 18px auto;
+    padding: 18px;
+  }
+
+  /* Cabeçalho */
+  .header-bar {
+    position: relative;
+    text-align: center;
+    font-weight: 600;
+    font-size: clamp(20px, 3.2vw, 36px);
+    padding: 14px 16px;
+    color: white;
+    background: linear-gradient(135deg, var(--vinho-1), #5c0018 40%, var(--vinho-2));
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+    border-bottom: 6px solid var(--gold);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+  }
+
+  .header-bar .title {
+    flex: 1;
+  }
+
+  .logo-small {
+    height: 64px;
+    width: auto;
+    object-fit:contain;
+  }
+
+  /* Fundo full-width (atrás do conteúdo) */
+  #bgLayer {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  #bgLayer img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.45) saturate(1.1);
+  }
+
+  /* Grid responsiva de heróis */
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-top: 18px;
+  }
+
+  .hero-card {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,215,0,0.12);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.6);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .hero-card img.hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display:block;
+  }
+
+  .hero-stats {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: linear-gradient(135deg, #800020, #a00030);
+    color: #fff;
+    padding: 6px 10px;
+    border: 2px solid var(--gold);
+    border-radius: 10px;
+    font-weight: 800;
+    text-align: center;
+    min-width: 70px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .hero-stats .count { font-size: clamp(18px, 3.2vw, 28px); line-height:1; }
+  .hero-stats .percent { font-size: clamp(12px, 2.4vw, 14px); opacity:0.95; }
+
+  /* QR code e botões fixos */
+  .qrcode {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    height: 110px;
+    width: 110px;
+    border-radius: 12px;
+    border: 3px solid var(--gold);
+    background: rgba(0,0,0,0.35);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index: 60;
+  }
+  .qrcode img { width: 90%; height: 90%; object-fit:contain; }
+
+  #btnGerar {
+    position: fixed;
+    bottom: 18px;
+    left: 18px;
+    z-index: 60;
+    padding: 12px 18px;
+    font-size: 1rem;
+    border-radius: 12px;
+    border: 2px solid var(--gold);
+    background: rgba(0,0,0,0.65);
+    color: white;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+  }
+  #btnGerar:hover { background: var(--gold); color: black; }
+
+  /* Info total (linha abaixo do header) */
+  .total-info {
+    margin-top: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #fff;
+  }
+
+  /* Mensagem de erro / carregando */
+  .status {
+    margin-top: 10px;
+    opacity: 0.9;
+  }
+
+  /* Ajustes para telas muito pequenas */
+  @media (max-width:420px) {
+    .logo-small { height:48px; }
+    .qrcode { height:90px; width:90px; right:12px; }
+    #btnGerar { left:12px; bottom:12px; padding:10px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="bgLayer"><img id="bgImg" src="" alt="bg"></div>
+
+<div class="app-wrap container">
+  <div class="header-bar">
+    <img class="logo-small" src="image/logo/torneio.png" alt="logo torneio" onerror="this.style.display='none'">
+    <div class="title">Relatório de Heróis</div>
+    <img class="logo-small" src="image/logo/fab.png" alt="fab" onerror="this.style.display='none'">
+  </div>
+
+  <div class="total-info" id="totalHeroes">Conversão: 0 Jogadores</div>
+  <div class="status text-muted" id="statusMsg">Carregando dados...</div>
+
+  <div id="heroGrid" class="team-grid" aria-live="polite"></div>
+</div>
+
+<!-- QR e botão fixos -->
+<div class="qrcode" title="Visite 13dominate">
+  <img src="image/logo/13Dominate_qrcode.png" alt="QR" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://13dominate.com'">
+</div>
+
+<button id="btnGerar" aria-label="Gerar Stories">📸 Gerar Stories</button>
+
+<!-- html2canvas -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<script>
+/* ----------------------------
+   CONFIGURAÇÕES (edite aqui)
+   ---------------------------- */
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSuFb7XuHidbVetdsK2rSDnMptjrN96FZxnsn7gCTUVHgCjPGf8I9lTxQP598sw0PBP3AHLYdDa3raw/pub?output=csv&gid=467989974";
+const MAX_BG = 7; // verificar image/bg/1.jpg..MAX_BG
+const LOCAL_ICON_PATH = "image/icon/"; // seu padrão no site
+/* ---------------------------- */
+
+const bgImg = document.getElementById("bgImg");
+const heroGrid = document.getElementById("heroGrid");
+const totalHeroesEl = document.getElementById("totalHeroes");
+const statusMsg = document.getElementById("statusMsg");
+const btnGerar = document.getElementById("btnGerar");
+
+let backgrounds = [];
+
+// Pré-carrega backgrounds (se existirem)
+(function preloadBGs(){
+  let loaded = 0;
+  for(let i=1;i<=MAX_BG;i++){
+    const url = `image/bg/${i}.jpg`;
+    const img = new Image();
+    img.src = url;
+    img.onload = () => {
+      backgrounds.push(url);
+      if (loaded === 0) setBG(0);
+    };
+    img.onerror = ()=>{/* ignora se não existir */};
+    loaded++;
+  }
+})();
+
+function setBG(idx){
+  if (backgrounds.length === 0) return;
+  idx = ((idx % backgrounds.length) + backgrounds.length) % backgrounds.length;
+  bgImg.src = backgrounds[idx];
+}
+
+/* ----------------------------
+   Função para carregar CSV
+   ---------------------------- */
+async function loadCSV(){
+  let text = null;
+  let errorMsg = "";
+  
+  statusMsg.innerText = "Carregando planilha...";
+  
+  // Estratégia 1: Tentar com allorigins.win (proxy CORS)
+  try {
+    const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(CSV_URL)}`);
+    if (res.ok) {
+      text = await res.text();
+      if (text && text.trim().length > 0) {
+        // Sucesso com allorigins
+        parseAndRenderCSV(text);
+        return;
+      }
+    }
+  } catch (err) {
+    errorMsg = `allorigins.win falhou: ${err.message}. `;
+  }
+  
+  // Estratégia 2: Tentar diretamente (pode funcionar em alguns navegadores)
+  try {
+    const res = await fetch(CSV_URL);
+    if (res.ok) {
+      text = await res.text();
+      if (text && text.trim().length > 0) {
+        // Sucesso direto
+        parseAndRenderCSV(text);
+        return;
+      }
+    }
+  } catch (err) {
+    errorMsg += `Fetch direto falhou: ${err.message}. `;
+  }
+  
+  // Estratégia 3: Tentar com outro proxy CORS
+  try {
+    const res = await fetch(`https://cors-anywhere.herokuapp.com/${CSV_URL}`);
+    if (res.ok) {
+      text = await res.text();
+      if (text && text.trim().length > 0) {
+        parseAndRenderCSV(text);
+        return;
+      }
+    }
+  } catch (err) {
+    errorMsg += `cors-anywhere falhou: ${err.message}. `;
+  }
+  
+  // Se todas as estratégias falharam
+  console.error("Erro ao carregar CSV:", errorMsg);
+  statusMsg.innerHTML = `
+    <div style="color: #ff6b6b; font-weight: 600;">
+      ❌ Erro ao carregar planilha: Failed to fetch
+    </div>
+    <div style="margin-top: 10px; font-size: 0.9em; color: #ccc;">
+      <strong>Solução:</strong> Para testar localmente, você precisa usar um servidor HTTP.<br>
+      <strong>Opção 1:</strong> Python: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">python -m http.server 8000</code><br>
+      <strong>Opção 2:</strong> Node.js: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">npx http-server</code><br>
+      <strong>Opção 3:</strong> VS Code: Instale a extensão "Live Server"<br>
+      Depois acesse: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">http://localhost:8000/instagramqtdhero.html</code>
+    </div>
+  `;
+}
+
+function parseAndRenderCSV(text) {
+  try {
+    // parse CSV simples (respeita vírgulas em aspas)
+    const lines = text.trim().split("\n").map(l => l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/));
+    if (lines.length === 0) {
+      statusMsg.innerText = "CSV vazio ou inválido.";
+      return;
+    }
+    
+    const header = lines.shift().map(h => h.trim().replace(/^"|"$/g,""));
+    const idxHero = header.indexOf("Hero");
+    const idxFileName = header.indexOf("url");
+
+    if (idxHero < 0 || idxFileName < 0) {
+      statusMsg.innerText = `CSV sem colunas 'Hero' ou 'url'. Colunas encontradas: ${header.join(", ")}`;
+      return;
+    }
+
+    const heroCountMap = {};
+    for (const row of lines) {
+      if (!row || row.length === 0) continue;
+      const heroName = (row[idxHero] || "").trim().replace(/^"|"$/g, "");
+      const fileName = (row[idxFileName] || "").trim().replace(/^"|"$/g, "");
+      if (!heroName) continue;
+      if (!heroCountMap[heroName]) heroCountMap[heroName] = { count: 0, img: fileName ? `${LOCAL_ICON_PATH}${fileName}` : '' };
+      heroCountMap[heroName].count++;
+    }
+
+    const total = Object.values(heroCountMap).reduce((s,h)=>s+h.count,0);
+    totalHeroesEl.innerText = `Conversão: ${total} Jogadores`;
+    statusMsg.innerText = `✅ Encontrados ${Object.keys(heroCountMap).length} heróis diferentes.`;
+
+    // transforma pra lista ordenada
+    const heroList = Object.keys(heroCountMap).map(name => ({
+      hero: name,
+      img: heroCountMap[name].img,
+      count: heroCountMap[name].count
+    })).sort((a,b) => b.count - a.count);
+
+    renderCards(heroList, total);
+    // armazena para geração de imagem depois
+    window.__heroData = { total, heroList };
+
+  } catch (err) {
+    console.error("Erro ao processar CSV:", err);
+    statusMsg.innerText = `Erro ao processar CSV: ${err.message}`;
+  }
+}
+
+/* ----------------------------
+   Renderiza os cards na tela
+   ---------------------------- */
+function renderCards(list, total){
+  heroGrid.innerHTML = "";
+  if (!list.length) {
+    heroGrid.innerHTML = `<div class="text-muted">Nenhum herói encontrado</div>`;
+    return;
+  }
+  for (const h of list) {
+    const percent = total ? Math.round((h.count/total)*100) + "%" : "0%";
+    const card = document.createElement("div");
+    card.className = "hero-card";
+    const img = document.createElement("img");
+    img.className = "hero-img";
+    img.alt = h.hero;
+    img.src = h.img || ''; // local path normalmente, se não existir ficará vazio
+    // se falhar no carregamento, tenta uma url pública (apenas para demo)
+    img.onerror = function(){
+      if (!this.dataset.triedFallback) {
+        this.dataset.triedFallback = "1";
+        // fallback público (pode trocar)
+        this.src = `https://via.placeholder.com/400x300?text=${encodeURIComponent(h.hero)}`;
+      }
+    };
+
+    const stats = document.createElement("div");
+    stats.className = "hero-stats";
+    stats.innerHTML = `<div class="count">${h.count}</div><div class="percent">${percent}</div>`;
+
+    card.appendChild(img);
+    card.appendChild(stats);
+    heroGrid.appendChild(card);
+  }
+}
+
+/* ----------------------------
+   Gera imagem 1080x1920 sem mexer na UI
+   - monta um container off-screen com o mesmo conteúdo
+   - renderiza com html2canvas e baixa PNG em alta qualidade
+   ---------------------------- */
+async function gerarStories() {
+  const data = window.__heroData;
+  if (!data) {
+    alert("Dados ainda não carregados.");
+    return;
+  }
+
+  btnGerar.disabled = true;
+  btnGerar.innerText = "Gerando...";
+
+  // Cria container off-screen
+  const storyW = 1080, storyH = 1920;
+  const off = document.createElement("div");
+  off.style.position = "fixed";
+  off.style.left = "-9999px";
+  off.style.top = "-9999px";
+  off.style.width = storyW + "px";
+  off.style.height = storyH + "px";
+  off.style.overflow = "hidden";
+  off.style.background = "linear-gradient(180deg, #1B4D3E, #000)";
+  off.style.padding = "48px";
+  off.style.boxSizing = "border-box";
+  off.style.color = "white";
+  off.style.fontFamily = "Segoe UI, Verdana, sans-serif";
+
+  // Cabeçalho
+  const hdr = document.createElement("div");
+  hdr.style.display = "flex";
+  hdr.style.alignItems = "center";
+  hdr.style.justifyContent = "center";
+  hdr.style.gap = "20px";
+  hdr.style.background = "linear-gradient(135deg, #7b001f, #5c0018, #30000d)";
+  hdr.style.padding = "18px";
+  hdr.style.borderRadius = "12px";
+  hdr.style.borderBottom = "6px solid " + getComputedStyle(document.documentElement).getPropertyValue('--gold');
+  hdr.innerHTML = `<div style="flex:1;text-align:center;font-weight:800;font-size:56px;">Relatório de Heróis</div>`;
+  off.appendChild(hdr);
+
+  // Total
+  const tot = document.createElement("div");
+  tot.style.marginTop = "18px";
+  tot.style.fontWeight = "800";
+  tot.style.fontSize = "28px";
+  tot.innerText = `Conversão: ${data.total} Jogadores`;
+  off.appendChild(tot);
+
+  // Grid grande
+  const grid = document.createElement("div");
+  grid.style.display = "grid";
+  grid.style.gridTemplateColumns = "repeat(3, 1fr)";
+  grid.style.gap = "18px";
+  grid.style.marginTop = "28px";
+  grid.style.alignItems = "start";
+
+  // Prepara imagens - limita a primeira 9 para caber no stories
+  const toRender = data.heroList.slice(0, 9);
+  // Preload imagens para reduzir risco de CORS problemas (tenta definir crossOrigin)
+  await Promise.all(toRender.map(h => preloadImage(h.img)));
+
+  for (const h of toRender) {
+    const card = document.createElement("div");
+    card.style.borderRadius = "12px";
+    card.style.overflow = "hidden";
+    card.style.background = "rgba(255,255,255,0.05)";
+    card.style.border = "2px solid rgba(255,215,0,0.12)";
+    card.style.display = "flex";
+    card.style.flexDirection = "column";
+    card.style.alignItems = "stretch";
+    card.style.justifyContent = "space-between";
+    card.style.height = "280px";
+
+    const img = document.createElement("img");
+    img.alt = h.hero;
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "cover";
+    img.src = h.img || `https://via.placeholder.com/400x300?text=${encodeURIComponent(h.hero)}`;
+    img.onerror = function(){ this.src = `https://via.placeholder.com/400x300?text=${encodeURIComponent(h.hero)}`; };
+
+    const info = document.createElement("div");
+    info.style.padding = "10px";
+    info.style.background = "linear-gradient(135deg, rgba(0,0,0,0.45), rgba(0,0,0,0.6))";
+    info.style.borderTop = "1px solid rgba(255,215,0,0.12)";
+    info.style.color = "white";
+    info.style.fontWeight = 800;
+    info.style.fontSize = "20px";
+    info.innerText = `${h.hero} — ${h.count} (${Math.round((h.count/data.total)*100 || 0)}%)`;
+
+    card.appendChild(img);
+    card.appendChild(info);
+    grid.appendChild(card);
+  }
+
+  off.appendChild(grid);
+
+  // QR no canto inferior direito do story
+  const qr = document.createElement("div");
+  qr.style.position = "absolute";
+  qr.style.right = "48px";
+  qr.style.bottom = "48px";
+  qr.style.width = "140px";
+  qr.style.height = "140px";
+  qr.style.border = "4px solid #FFD700";
+  qr.style.borderRadius = "12px";
+  qr.style.background = "white";
+  const qrImg = document.createElement("img");
+  qrImg.style.width = "100%";
+  qrImg.style.height = "100%";
+  qrImg.style.objectFit = "contain";
+  qrImg.src = "image/logo/13Dominate_qrcode.png";
+  qrImg.onerror = () => qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://13dominate.com`;
+  qr.appendChild(qrImg);
+  off.appendChild(qr);
+
+  document.body.appendChild(off);
+
+  // Espera 400ms pra garantir imagens carregadas
+  await new Promise(r => setTimeout(r, 400));
+
+  // Renderiza com html2canvas (scale 2 para qualidade)
+  try {
+    const canvas = await html2canvas(off, {
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: null,
+      width: storyW,
+      height: storyH,
+      scale: 2
+    });
+
+    // Baixa
+    const link = document.createElement("a");
+    link.download = `stories-1080x1920.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  } catch (err) {
+    console.error("Erro ao gerar imagem:", err);
+    alert("Falha ao gerar imagem. Veja console para detalhes.");
+  } finally {
+    // limpa container off-screen e restaura botão
+    off.remove();
+    btnGerar.disabled = false;
+    btnGerar.innerText = "📸 Gerar Stories";
+  }
+}
+
+/* Pré-carrega imagem tentando definir crossOrigin para reduzir problemas CORS */
+function preloadImage(src){
+  return new Promise(resolve => {
+    if (!src) return resolve();
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = ()=> resolve();
+      img.onerror = ()=> resolve();
+      img.src = src;
+    } catch(e) { resolve(); }
+  });
+}
+
+/* Evento do botão */
+btnGerar.addEventListener("click", gerarStories);
+
+/* Inicializa */
+loadCSV();
+</script>
+
+</body>
+</html>
