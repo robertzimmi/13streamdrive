@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -17,7 +17,7 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     height: 100vh; backdrop-filter: blur(6px); background: rgba(0,0,0,0.6);
   }
-  .config-container { display: flex; gap: 40px; margin-bottom: 30px; }
+  .config-container { display: flex; gap: 40px; margin-bottom: 20px; }
   .player-config {
     background: rgba(255,255,255,0.1); padding: 20px; border-radius: 16px;
     width: 350px; box-shadow: 0 0 10px rgba(0,0,0,0.5);
@@ -30,10 +30,11 @@
   .preview img { width: 100px; height: auto; border-radius: 8px; transition: transform 0.3s ease; }
   button { padding: 12px 20px; background: #E07A5F; color: white; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; transition: background 0.3s; }
   button:hover { background: #d0644a; }
-  .toggle { margin-top: 15px; }
+  .toggle { margin-top: 10px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:center; }
 
   #overlay { display: none; }
 
+  /* SCOREBOARD */
   .scoreboard {
     position: absolute; top: 0; width: 100%; height: 80px; background: black;
     display: flex; justify-content: space-between; align-items: center;
@@ -41,17 +42,75 @@
     border-bottom: 2px solid rgba(255,255,255,0.1); text-shadow: 0 0 6px black;
     z-index: 10;
   }
-  .player { display: flex; align-items: center; gap: 10px; }
-  .score { font-size: 30px; text-shadow: 0 0 8px black; }
 
-  .camera {
-    position: absolute; top: 100px; width: 280px; height: 320px;
-    background: rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.15);
-    border-radius: 12px; backdrop-filter: blur(6px);
+  .player {
+    display: flex; align-items: center; gap: 20px;
   }
+
+  .score { font-size: 30px; }
+
+  /* ❤️ LIFEBOX */
+  .life-box {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    cursor: pointer;
+  }
+
+  .life-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0.28;
+  }
+
+  .life-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 36px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 8px black;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /* áreas clicáveis esquerda / direita */
+  .life-left,
+  .life-right {
+    position: absolute;
+    top: 0;
+    width: 50%;
+    height: 100%;
+  }
+
+  .life-left { left: 0; }
+  .life-right { right: 0; }
+
+  .life-left:hover,
+  .life-right:hover {
+    background: rgba(255,255,255,0.08);
+  }
+
+  /* CAMERAS */
+  .camera {
+    position: absolute;
+    top: 100px;
+    width: 280px;
+    height: 320px;
+    background: rgba(0,0,0,0.4);
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    backdrop-filter: blur(6px);
+    z-index: 20 !important; /* 🔥 AGORA FICA NA FRENTE DE TUDO */
+}
+
   .camera.left { left: 40px; }
   .camera.right { right: 40px; }
 
+  /* HERO ART */
   .hero {
     position: absolute; bottom: 40px; width: 400px; text-align: center;
     color: white; text-shadow: 0 0 12px black;
@@ -60,14 +119,45 @@
   .hero.left { left: 40px; }
   .hero.right { right: 40px; }
 
+  /* PLAY AREA */
   .play-area {
-    position: absolute; top: 90px; bottom: 0; left: 0; right: 0;
-    display: flex; justify-content: center; align-items: center; z-index: 1;
-  }
-  .play-space {
-    width: 65%; height: 80%; background: rgba(0,0,0,0.25);
-    border: 2px solid rgba(255,255,255,0.15); border-radius: 15px;
+    position: absolute;
+    top: 90px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999 !important; /* 🔥 AGORA É O MAIS ALTO DE TUDO */
+}
+
+.play-space {
+    width: 65%;
+    height: 80%;
+    background: rgba(0,0,0,0.25);
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 15px;
     backdrop-filter: blur(4px);
+    z-index: 9999 !important; /* 🔥 GARANTIA EXTRA */
+}
+
+
+  /* --- Fade / show-hide smooth --- */
+  .fade-group {
+    transition: opacity 0.36s ease, transform 0.24s ease;
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .fade-hidden {
+    opacity: 0;
+    transform: translateY(-6px);
+    pointer-events: none;
+  }
+
+  /* small helper to hide text without shifting layout too much */
+  .invisible {
+    visibility: hidden;
   }
 </style>
 </head>
@@ -76,49 +166,97 @@
 <div id="config">
   <h1>🎥 Configuração da Transmissão</h1>
   <div class="config-container">
+    
+    <!-- PLAYER 1 CONFIG -->
     <div class="player-config" id="p1-config">
       <h2>Player 1</h2>
-      <label>Nome:</label><input type="text" id="p1-name" placeholder="Nome do Player 1">
+      <label>Nome:</label><input type="text" id="p1-name">
       <label>Wins:</label><input type="number" id="p1-wins" value="0">
       <label>Losses:</label><input type="number" id="p1-losses" value="0">
       <label>Draws:</label><input type="number" id="p1-draws" value="0">
-      <label>Herói:</label>
-      <select id="p1-hero"></select>
+      <label>Herói:</label><select id="p1-hero"></select>
       <div class="preview"><img id="p1-preview" src=""></div>
       <div class="toggle"><input type="checkbox" id="p1-flip"> Inverter imagem</div>
     </div>
 
+    <!-- PLAYER 2 CONFIG -->
     <div class="player-config" id="p2-config">
       <h2>Player 2</h2>
-      <label>Nome:</label><input type="text" id="p2-name" placeholder="Nome do Player 2">
+      <label>Nome:</label><input type="text" id="p2-name">
       <label>Wins:</label><input type="number" id="p2-wins" value="0">
       <label>Losses:</label><input type="number" id="p2-losses" value="0">
       <label>Draws:</label><input type="number" id="p2-draws" value="0">
-      <label>Herói:</label>
-      <select id="p2-hero"></select>
+      <label>Herói:</label><select id="p2-hero"></select>
       <div class="preview"><img id="p2-preview" src=""></div>
       <div class="toggle"><input type="checkbox" id="p2-flip"> Inverter imagem</div>
     </div>
+
   </div>
-  <div class="toggle"><input type="checkbox" id="toggle-webcam" checked> Mostrar câmeras</div>
-  <button onclick="startStream()">Iniciar Transmissão</button>
+
+  <!-- TOGGLES: câmeras / vida / placar -->
+  <div class="toggle">
+    <label><input type="checkbox" id="toggle-webcam" checked> Mostrar câmeras</label>
+    <label><input type="checkbox" id="toggle-vida" checked> Mostrar vida</label>
+    <label><input type="checkbox" id="toggle-placar" checked> Mostrar placar</label>
+  </div>
+
+  <div style="margin-top:14px;">
+    <button onclick="startStream()">Iniciar Transmissão</button>
+  </div>
 </div>
 
+<!-- ================= OVERLAY ================= -->
 <div id="overlay">
+
   <div class="scoreboard">
-    <div class="player"><span id="p1-display-name"></span><span class="score" id="p1-score"></span></div>
-    <div class="player"><span class="score" id="p2-score"></span><span id="p2-display-name"></span></div>
+
+    <!-- LEFT SIDE -->
+    <div class="player">
+      <span id="p1-display-name"></span>
+      <!-- placar wrapper para controle -->
+      <span id="placar-left" class="fade-group">
+        <span class="score" id="p1-score"></span>
+      </span>
+
+      <div class="life-box fade-group" id="p1-life-box">
+        <img src="image/logo/life.png">
+        <div class="life-value" id="p1-life">40</div>
+        <div class="life-left"></div>
+        <div class="life-right"></div>
+      </div>
+      
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="player">
+      <div class="life-box fade-group" id="p2-life-box">
+        <img src="image/logo/life.png">
+        <div class="life-value" id="p2-life">40</div>
+        <div class="life-left"></div>
+        <div class="life-right"></div>
+      </div>
+
+      <!-- placar wrapper para controle -->
+      <span id="placar-right" class="fade-group">
+        <span class="score" id="p2-score"></span>
+      </span>
+
+      <span id="p2-display-name"></span>
+    </div>
+
   </div>
 
-  <div class="camera left" id="cam-left"></div>
-  <div class="camera right" id="cam-right"></div>
+
+  <div class="camera left fade-group" id="cam-left"></div>
+  <div class="camera right fade-group" id="cam-right"></div>
 
   <div class="hero left">
-    <img id="p1-img" src="" alt="Hero1" onerror="this.src='image/icon/unknown.webp'">
+    <img id="p1-img" src="" alt="Hero1">
     <h2 id="p1-hero-name"></h2>
   </div>
+
   <div class="hero right">
-    <img id="p2-img" src="" alt="Hero2" onerror="this.src='image/icon/unknown.webp'">
+    <img id="p2-img" src="" alt="Hero2">
     <h2 id="p2-hero-name"></h2>
   </div>
 
@@ -126,6 +264,7 @@
 </div>
 
 <script>
+/* HERO LIST */
 const heroes = [
   "icon_arakni_m.webp","icon_arakni_sc.webp","icon_arakni_th-1.webp","icon_aurora.webp","icon_azalea.webp",
   "icon_benji.webp","icon_betsy.webp","icon_boltyn.webp","icon_bravo_s.webp","icon_bravo_sots.webp",
@@ -170,6 +309,7 @@ document.getElementById("p2-hero").addEventListener("change", e => {
   document.getElementById("p2-preview").src = `image/icon/${e.target.value}`;
 });
 
+/* START STREAM */
 function startStream() {
   document.getElementById("config").style.display = "none";
   document.getElementById("overlay").style.display = "block";
@@ -198,19 +338,125 @@ function startStream() {
 
   document.getElementById("p1-display-name").innerText = p1.name;
   document.getElementById("p2-display-name").innerText = p2.name;
+
   document.getElementById("p1-score").innerText = `${p1.wins}-${p1.losses}-${p1.draws}`;
   document.getElementById("p2-score").innerText = `${p2.wins}-${p2.losses}-${p2.draws}`;
+
   document.getElementById("p1-img").src = p1.img;
   document.getElementById("p2-img").src = p2.img;
+
   document.getElementById("p1-hero-name").innerText = p1.hero;
   document.getElementById("p2-hero-name").innerText = p2.hero;
+
   document.getElementById("p1-img").style.transform = p1.flip ? "scaleX(-1)" : "none";
   document.getElementById("p2-img").style.transform = p2.flip ? "scaleX(-1)" : "none";
 
-  const showCams = document.getElementById("toggle-webcam").checked;
-  document.getElementById("cam-left").style.display = showCams ? "block" : "none";
-  document.getElementById("cam-right").style.display = showCams ? "block" : "none";
+  // VIDA inicial
+  document.getElementById("p1-life").innerText = "40";
+  document.getElementById("p2-life").innerText = "40";
+
+  // Aplicar visibilidades conforme checkboxes atuais
+  applyTogglesFromConfig();
 }
+
+/* ====== CONTROLE DE VIDA CLICK ESQUERDA/DIREITA ====== */
+
+function setupLifeBox(boxId, valueId) {
+    const box = document.getElementById(boxId);
+    const value = document.getElementById(valueId);
+    
+    let life = parseInt(value.innerText);
+
+    box.querySelector(".life-left").addEventListener("click", (e) => {
+        e.stopPropagation();
+        life = Math.max(0, life - 1);
+        value.innerText = life;
+    });
+
+    box.querySelector(".life-right").addEventListener("click", (e) => {
+        e.stopPropagation();
+        life = life + 1;
+        value.innerText = life;
+    });
+}
+
+/* Ativar players */
+setupLifeBox("p1-life-box", "p1-life");
+setupLifeBox("p2-life-box", "p2-life");
+
+
+/* =========== TOGGLE (câmeras / vida / placar) =========== */
+
+const chkCam = document.getElementById("toggle-webcam");
+const chkVida = document.getElementById("toggle-vida");
+const chkPlacar = document.getElementById("toggle-placar");
+
+const camLeft = document.getElementById("cam-left");
+const camRight = document.getElementById("cam-right");
+const p1LifeBox = document.getElementById("p1-life-box");
+const p2LifeBox = document.getElementById("p2-life-box");
+const placarLeft = document.getElementById("placar-left");
+const placarRight = document.getElementById("placar-right");
+
+// função que aplica o estado visual (com animação) baseado no checkbox
+function setVisibilityElement(elem, visible) {
+  if (!elem) return;
+  if (visible) {
+    elem.classList.remove("fade-hidden");
+  } else {
+    elem.classList.add("fade-hidden");
+  }
+}
+
+// aplica todos os toggles (usado ao iniciar e quando os checkboxes mudam)
+function applyTogglesFromConfig() {
+  // câmeras
+  setVisibilityElement(camLeft, chkCam.checked);
+  setVisibilityElement(camRight, chkCam.checked);
+
+  // vida (ambos boxes)
+  setVisibilityElement(p1LifeBox, chkVida.checked);
+  setVisibilityElement(p2LifeBox, chkVida.checked);
+
+  // placar (os spans de score)
+  setVisibilityElement(placarLeft, chkPlacar.checked);
+  setVisibilityElement(placarRight, chkPlacar.checked);
+}
+
+// adicionar listeners para alterar em tempo real (mesmo com overlay visível)
+chkCam.addEventListener("change", () => {
+  // se overlay está visível, atualiza visual imediatamente
+  setVisibilityElement(camLeft, chkCam.checked);
+  setVisibilityElement(camRight, chkCam.checked);
+});
+chkVida.addEventListener("change", () => {
+  setVisibilityElement(p1LifeBox, chkVida.checked);
+  setVisibilityElement(p2LifeBox, chkVida.checked);
+});
+chkPlacar.addEventListener("change", () => {
+  setVisibilityElement(placarLeft, chkPlacar.checked);
+  setVisibilityElement(placarRight, chkPlacar.checked);
+});
+
+// garantir estado inicial (config tem os checkboxes marcados por default)
+// se quiser que algum comece desligado, mude o atributo "checked" no HTML acima.
+// aqui apenas aplica o estado visual caso alguém abra o overlay já (ou após startStream)
+document.addEventListener("DOMContentLoaded", () => {
+  // inicialmente esconder elementos do overlay até startStream, mas aplicar classes
+  // (overlay começa hidden; as classes definem o estado que terá quando aberto)
+  if (!chkCam.checked) {
+    camLeft.classList.add("fade-hidden");
+    camRight.classList.add("fade-hidden");
+  }
+  if (!chkVida.checked) {
+    p1LifeBox.classList.add("fade-hidden");
+    p2LifeBox.classList.add("fade-hidden");
+  }
+  if (!chkPlacar.checked) {
+    placarLeft.classList.add("fade-hidden");
+    placarRight.classList.add("fade-hidden");
+  }
+});
 </script>
 
 </body>
