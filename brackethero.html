@@ -123,7 +123,8 @@ if (isNaN(bgNumber) || bgNumber < 1 || bgNumber > NUM_BG) bgNumber = 1;
 document.body.style.background = `url('image/bg/${bgNumber}.jpg') no-repeat center center fixed`;
 document.body.style.backgroundSize = 'cover';
 
-const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSuFb7XuHidbVetdsK2rSDnMptjrN96FZxnsn7gCTUVHgCjPGf8I9lTxQP598sw0PBP3AHLYdDa3raw/pub?gid=117341349&single=true&output=csv";
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRuKwiibVjvKNRI0cXNSpdxWP0lLwM2ehdLI5RK1U70612m4Rq7ZclHSZLTynfO33t-ZZu0-bDy_O3N/pub?gid=513467697&single=true&output=csv";
+
 
 function escapeHtml(str) { return str ? String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") : ""; }
 
@@ -224,3 +225,4 @@ loadCSV();
 </script>
 </body>
 </html>
+
